@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Eye, EyeOff, X } from 'lucide-react';
+import { CheckCircle2, X } from 'lucide-react';
 import { TranslationDictionary } from '../i18n/translations';
 import { MemberProfile } from '../types';
 import { BrandLogo } from './BrandLogo';
@@ -10,9 +10,8 @@ interface RegistrationModalProps {
   t: TranslationDictionary;
   onRegister: (payload: {
     fullName: string;
-    email: string;
+    phone: string;
     birthDate: string;
-    whatsappOptIn: boolean;
   }) => MemberProfile;
 }
 
@@ -25,12 +24,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   onRegister,
 }) => {
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [birthDate, setBirthDate] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  // Strictly unchecked by default — separate & optional
-  const [whatsappOptIn, setWhatsappOptIn] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -41,10 +36,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
   const resetAndClose = () => {
     setFullName('');
-    setEmail('');
+    setPhone('');
     setBirthDate('');
-    setPassword('');
-    setWhatsappOptIn(false);
     setErrors({});
     setSubmitting(false);
     setCreatedProfile(null);
@@ -59,14 +52,11 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     if (fullName.trim().length < 2) {
       nextErrors.fullName = t.registration.errorNameRequired;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      nextErrors.email = t.registration.errorEmailInvalid;
+    if (phone.replace(/\\D/g, '').length < 8) {
+      nextErrors.phone = t.registration.errorPhoneInvalid;
     }
     if (!birthDate) {
       nextErrors.birthDate = t.registration.errorBirthRequired;
-    }
-    if (password.length < 6) {
-      nextErrors.password = t.registration.errorPasswordShort;
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -79,9 +69,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     window.setTimeout(() => {
       const profile = onRegister({
         fullName,
-        email,
+        phone,
         birthDate,
-        whatsappOptIn,
       });
       setCreatedProfile(profile);
       setSubmitting(false);
@@ -207,25 +196,13 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               </div>
 
               <div>
-                <label
-                  htmlFor="reg-email"
-                  className="block text-xs font-semibold text-[#293622] mb-1.5"
-                >
-                  {t.registration.emailLabel}
+                <label htmlFor="reg-phone" className="block text-xs font-semibold text-[#293622] mb-1.5">
+                  {t.registration.phoneLabel}
                 </label>
-                <input
-                  id="reg-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t.registration.emailPlaceholder}
-                  className="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl bg-white border border-[#D8CEB8] text-sm text-[#1F281B] placeholder:text-[#8A9184] focus:outline-none focus:border-[#4A5D3F]"
-                />
-                {errors.email && (
-                  <p className="mt-1 text-xs text-[#9E3B2B] font-medium">
-                    {errors.email}
-                  </p>
-                )}
+                <input id="reg-phone" type="tel" inputMode="tel" autoComplete="tel" value={phone}
+                  onChange={(e) => setPhone(e.target.value)} placeholder={t.registration.phonePlaceholder}
+                  className="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl bg-white border border-[#D8CEB8] text-sm text-[#1F281B] placeholder:text-[#8A9184] focus:outline-none focus:border-[#4A5D3F]" />
+                {errors.phone && <p className="mt-1 text-xs text-[#9E3B2B] font-medium">{errors.phone}</p>}
               </div>
 
               <div>
@@ -248,60 +225,6 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                   </p>
                 )}
               </div>
-
-              <div>
-                <label
-                  htmlFor="reg-password"
-                  className="block text-xs font-semibold text-[#293622] mb-1.5"
-                >
-                  {t.registration.passwordLabel}
-                </label>
-                <div className="relative">
-                  <input
-                    id="reg-password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder={t.registration.passwordPlaceholder}
-                    className="w-full min-h-[46px] pl-3.5 pr-11 py-2.5 rounded-xl bg-white border border-[#D8CEB8] text-sm text-[#1F281B] placeholder:text-[#8A9184] focus:outline-none focus:border-[#4A5D3F]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label="Toggle password"
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 min-h-[38px] min-w-[38px] flex items-center justify-center text-[#5A6353] hover:text-[#293622]"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="mt-1 text-xs text-[#9E3B2B] font-medium">
-                    {errors.password}
-                  </p>
-                )}
-              </div>
-
-              {/* Separate, Optional, Unchecked-by-default WhatsApp Consent */}
-              <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-white border border-[#E7DFCC] cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={whatsappOptIn}
-                  onChange={(e) => setWhatsappOptIn(e.target.checked)}
-                  className="mt-0.5 h-5 w-5 rounded border-[#B8AE98] accent-[#4A5D3F] shrink-0"
-                />
-                <span className="text-xs leading-relaxed">
-                  <span className="block font-semibold text-[#293622]">
-                    {t.registration.whatsappOptInLabel}
-                  </span>
-                  <span className="block text-[#5A6353] mt-0.5">
-                    {t.registration.whatsappOptInHint}
-                  </span>
-                </span>
-              </label>
 
               <button
                 type="submit"
