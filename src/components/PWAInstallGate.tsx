@@ -61,7 +61,6 @@ export const PWAInstallGate: React.FC<PWAInstallGateProps> = ({
     if (isInstallable) {
       const outcome = await onInstall();
       if (outcome === 'accepted') {
-        onContinueInBrowser();
         return;
       }
       if (outcome === 'unavailable' || outcome === 'dismissed') {
