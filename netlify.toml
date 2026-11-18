@@ -5,6 +5,7 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+  external_node_modules = ["@supabase/supabase-js", "bcryptjs"]
 
 # Rotas internas (equivalentes aos rewrites do vercel.json antigo)
 [[redirects]]
