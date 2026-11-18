@@ -1,6 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion, MotionConfig } from 'motion/react';
 import { Layout } from './components/Layout';
+import { CookieConsent } from './components/CookieConsent';
+import { NotificationActivationModal } from './components/NotificationActivationModal';
 import { MemberCardModal } from './components/MemberCardModal';
 import { PWAInstallGate } from './components/PWAInstallGate';
 import { PWAStatusBanners } from './components/PWAStatusBanners';
@@ -43,6 +45,20 @@ export default function App() {
   const [globalToast, setGlobalToast] = useState<string | null>(null);
 
   const [installGateDismissed, setInstallGateDismissed] = useState<boolean>(false);
+  const [cookieConsentOpen, setCookieConsentOpen] = useState(false);
+  const [notificationPromptOpen, setNotificationPromptOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isInstalled || typeof Notification === 'undefined') return;
+    const promptKey = 'club-la-ruedita-notification-prompt-v1';
+    if (window.localStorage.getItem(promptKey)) return;
+    if (Notification.permission !== 'default') {
+      window.localStorage.setItem(promptKey, 'completed');
+      return;
+    }
+    window.localStorage.setItem(promptKey, 'shown');
+    setNotificationPromptOpen(true);
+  }, [isInstalled]);
 
   const showToast = useCallback((message: string) => {
     setGlobalToast(message);
@@ -53,6 +69,9 @@ export default function App() {
 
   const handleDismissInstallGate = useCallback(() => {
     setInstallGateDismissed(true);
+    if (!window.localStorage.getItem('club-la-ruedita-cookie-consent-v1')) {
+      setCookieConsentOpen(true);
+    }
   }, []);
 
   const handleNavigate = useCallback((tab: TabId) => {
@@ -158,6 +177,20 @@ export default function App() {
           </motion.div>
         </AnimatePresence>
       </Layout>
+
+      <CookieConsent
+        isOpen={cookieConsentOpen}
+        language={language}
+        title={t.registration.legalDocs.cookies.title}
+        body={t.registration.legalDocs.cookies.body}
+        onClose={() => setCookieConsentOpen(false)}
+      />
+
+      <NotificationActivationModal
+        isOpen={notificationPromptOpen}
+        language={language}
+        onClose={() => setNotificationPromptOpen(false)}
+      />
 
       {/* Global Toast Notification */}
       {globalToast && (
