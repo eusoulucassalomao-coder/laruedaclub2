@@ -16,6 +16,7 @@ export const INITIAL_MEMBER: MemberProfile = {
   fullName: 'María Rodríguez',
   firstName: 'María',
   email: 'maria.rodriguez@ejemplo.com',
+  phone: '+54 9 376 123 4567',
   birthDate: '1996-05-14',
   memberSince: '2025-03',
   avatarUrl: ASSETS.avatarMaria,
