@@ -5,6 +5,7 @@ import {
   ApiMe,
   ApiReward,
   FidApiError,
+  RESTAURANT_SLUG,
   fidApi,
 } from '../api/fid';
 import { HistoryEntry, Language, MemberProfile, RewardDefinition } from '../types';
@@ -185,7 +186,10 @@ export function useAppState() {
   const [rewards, setRewards] = useState<RewardDefinition[]>([]);
   const [customer, setCustomer] = useState<ApiMe | null>(null);
   const [status, setStatus] = useState<LoadStatus>('loading');
-  const tokenRef = useRef<string>(readStorage(TOKEN_KEY) ?? '');
+  // Reaproveita o login do app antigo (chave "mkf_t_<restaurante>") para o cliente não precisar se cadastrar de novo.
+  const tokenRef = useRef<string>(
+    readStorage(TOKEN_KEY) ?? readStorage(`mkf_t_${RESTAURANT_SLUG}`) ?? ''
+  );
   const rewardsRef = useRef<RewardDefinition[]>([]);
 
   // idioma / preferências locais
@@ -211,6 +215,7 @@ export function useAppState() {
       if (error instanceof FidApiError && error.status === 401) {
         tokenRef.current = '';
         writeStorage(TOKEN_KEY, null);
+        writeStorage(`mkf_t_${RESTAURANT_SLUG}`, null);
         applyMe(null);
       } else {
         throw error;
@@ -310,6 +315,7 @@ export function useAppState() {
   const signOut = useCallback(() => {
     tokenRef.current = '';
     writeStorage(TOKEN_KEY, null);
+    writeStorage(`mkf_t_${RESTAURANT_SLUG}`, null);
     applyMe(null);
   }, [applyMe]);
 
