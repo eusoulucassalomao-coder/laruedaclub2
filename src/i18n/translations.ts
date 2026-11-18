@@ -507,7 +507,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
     },
     profile: {
       title: 'Mi perfil',
-      subtitle: 'Administra tus datos personales, idioma, preferencias y vistas previas.',
+      subtitle: 'Administra tus datos personales, idioma y vistas previas.',
       memberIdLabel: 'ID de cliente',
       memberSinceLabel: 'Socio desde',
       emailLabel: 'Correo electrónico',
@@ -885,7 +885,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
     },
     profile: {
       title: 'My profile',
-      subtitle: 'Manage your member details, language, preferences, and screen previews.',
+      subtitle: 'Manage your member details, language, and screen previews.',
       memberIdLabel: 'Customer ID',
       memberSinceLabel: 'Member since',
       emailLabel: 'Email address',
