@@ -46,7 +46,7 @@ export const PWAInstallGate: React.FC<PWAInstallGateProps> = ({
   const [viewMode, setViewMode] = useState<InstallViewMode>(() =>
     resolveInitialMode(platform)
   );
-  const [showManualSteps, setShowManualSteps] = useState(false);
+  const [installMessage, setInstallMessage] = useState(false);
 
   useEffect(() => {
     setViewMode(resolveInitialMode(platform));
@@ -64,11 +64,11 @@ export const PWAInstallGate: React.FC<PWAInstallGateProps> = ({
         onContinueInBrowser();
         return;
       }
-      if (outcome === 'unavailable') {
-        setShowManualSteps(true);
+      if (outcome === 'unavailable' || outcome === 'dismissed') {
+        setInstallMessage(true);
       }
     } else {
-      setShowManualSteps(true);
+      setInstallMessage(true);
     }
   };
 
@@ -128,7 +128,7 @@ export const PWAInstallGate: React.FC<PWAInstallGateProps> = ({
                     aria-selected={active}
                     onClick={() => {
                       setViewMode(opt.id);
-                      setShowManualSteps(false);
+                      setInstallMessage(false);
                     }}
                     className={`min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
                       active
@@ -179,23 +179,11 @@ export const PWAInstallGate: React.FC<PWAInstallGateProps> = ({
               </button>
             </div>
 
-            {showManualSteps && (
-              <div className="mt-6 pt-5 border-t border-[#E7DFCC]">
-                <h2 className="font-sans text-sm font-semibold text-[#293622] mb-3">
-                  {t.pwa.androidManualTitle}
-                </h2>
-                <ol className="space-y-2.5 text-sm text-[#5A6353]">
-                  {t.pwa.androidManualSteps.map((step, index) => (
-                    <li key={step} className="flex items-start gap-2.5">
-                      <span className="w-5 h-5 rounded-full bg-[#4A5D3F] text-[#FAF7F0] text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
-                        {index + 1}
-                      </span>
-                      <span>{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
+            {installMessage && (
+              <p role="status" className="mt-4 text-center text-xs text-[#6B7365]">
+                {t.pwa.installUnavailableToast}
+              </p>
+            )}}
           </div>
         )}
 
