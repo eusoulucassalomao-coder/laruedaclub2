@@ -1263,7 +1263,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
     },
     profile: {
       title: 'Meu perfil',
-      subtitle: 'Gerencie seus dados, idioma, preferências e pré-visualização de telas.',
+      subtitle: 'Gerencie seus dados, idioma e pré-visualização de telas.',
       memberIdLabel: 'ID do cliente',
       memberSinceLabel: 'Membro desde',
       emailLabel: 'E-mail',
