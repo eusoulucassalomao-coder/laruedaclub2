@@ -462,7 +462,7 @@ module.exports = async function handler(req,res) {
 
     const token=bearer(req);
     const cashier=["search","visit","bonus","find_code","deliver","recent"].includes(action);
-    const owner=["stats","customers","export_customers","export_visits","redemptions","save_config","wa_status","wa_connect","wa_logout"].includes(action);
+    const owner=["stats","customers","export_customers","export_visits","redemptions","surveys","save_config","wa_status","wa_connect","wa_logout"].includes(action);
     if(cashier||owner){
       const roles=owner?["panel"]:["caja","panel"];
       if(!verifyToken(slug,token,roles)) return res.status(401).json({error:"unauthorized",message:"La sesión venció. Entrá de nuevo."});
@@ -529,6 +529,30 @@ module.exports = async function handler(req,res) {
     if(action==="redemptions"){
       const rows=await many("redemptions",[queryEqual("restaurant_id",r.id),queryOrderDesc("created_at")],60);
       return res.status(200).json({redemptions:await Promise.all(rows.map(async x=>({name:x.name,code:x.code,status:x.status,ts:x.created_at,usedAt:x.used_at,customer:(await getDocument("customers",x.customer_id).catch(()=>null))?.name||"—"})))});
+    }
+    if(action==="surveys"){
+      // Respostas da pesquisa de satisfação (só o dono). Notas 1-3 = "baja", 4-5 = "alta" (mesma regra do n8n).
+      const { data: rows, error } = await supabase.from("surveys")
+        .select("rating,response,reviewed_at,created_at,customer_id")
+        .eq("restaurant_id", r.id).order("created_at", { ascending: false }).limit(1000);
+      if(error){ console.error("surveys", error.message); throw Object.assign(new Error("No se pudo completar la operación"),{code:"db",status:500}); }
+      const list = rows || [];
+      const answered = list.filter(x => x.rating != null).sort((a,b) => new Date(b.reviewed_at||b.created_at) - new Date(a.reviewed_at||a.created_at));
+      const ids = [...new Set(answered.map(x => x.customer_id))];
+      const { data: custs } = ids.length ? await supabase.from("customers").select("id,name,phone").in("id", ids) : { data: [] };
+      const by = new Map((custs || []).map(c => [c.id, c]));
+      const sum = answered.reduce((s,x) => s + Number(x.rating), 0);
+      return res.status(200).json({
+        summary: {
+          sent: list.length, answered: answered.length, pending: list.length - answered.length,
+          avg: answered.length ? Math.round(sum / answered.length * 10) / 10 : 0,
+          low: answered.filter(x => x.rating <= 3).length, high: answered.filter(x => x.rating >= 4).length,
+        },
+        surveys: answered.slice(0, 200).map(x => ({
+          ts: x.reviewed_at || x.created_at, rating: x.rating, comment: x.response || "",
+          name: (by.get(x.customer_id) || {}).name || "—", phone: (by.get(x.customer_id) || {}).phone || "",
+        })),
+      });
     }
     if(action==="save_config"){
       const next=cleanConfig(r.config,body.config);

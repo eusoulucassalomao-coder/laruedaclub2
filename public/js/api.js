@@ -67,6 +67,7 @@
     exportCustomers: t => call({ action: "export_customers" }, t),
     exportVisits: t => call({ action: "export_visits" }, t),
     redemptions: t => call({ action: "redemptions" }, t),
+    surveys: t => call({ action: "surveys" }, t),
     async saveConfig(t, config){ const j = await call({ action: "save_config", config }, t); remote = j.config; return j; }
   };
   window.Fid = F;

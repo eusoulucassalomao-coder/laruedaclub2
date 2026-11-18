@@ -63,8 +63,33 @@
       return `<tr><td>${esc(c.name)}</td><td>${dshort(c.last_visit)} <small style="color:var(--muted)">(${daysAgo(c.last_visit)} d)</small></td><td>${fmt(c.points)}</td><td><a class="btn sm" target="_blank" rel="noopener" href="https://wa.me/${F.digits(c.phone)}?text=${encodeURIComponent(msg)}">Escribir</a></td></tr>`;
     }).join("") || `<tr><td colspan="4"><small>Nada por recuperar.</small></td></tr>`;
 
-    drawClients(); drawReds(); drawCfg(); waCheck();
+    drawClients(); drawReds(); drawSurveys(); drawCfg(); waCheck();
   }
+
+  // ---- encuestas de satisfacción ----
+  let svData = null;
+  const stars = n => "★".repeat(n) + "☆".repeat(5 - n);
+  function paintSurveys(){
+    if(!svData) return;
+    const s = svData.summary, flt = $("svFilter").value;
+    $("svKpis").innerHTML = [
+      ["Nota promedio", s.answered ? s.avg.toFixed(1) + " / 5" : "—", `${fmt(s.answered)} respondidas`],
+      ["Enviadas", fmt(s.sent), `${fmt(s.pending)} sin responder`],
+      ["Notas bajas (1 a 3)", fmt(s.low), "para revisar"],
+      ["Notas altas (4 y 5)", fmt(s.high), "van a Google"],
+    ].map(([t, v, sub]) => `<div class="kpi"><small>${esc(t)}</small><b>${esc(v)}</b><span>${esc(sub)}</span></div>`).join("");
+    const rows = svData.surveys.filter(x => flt === "low" ? x.rating <= 3 : flt === "high" ? x.rating >= 4 : true);
+    $("svRows").innerHTML = rows.map(x => {
+      const first = String(x.name).split(" ")[0];
+      const msg = `Hola ${first}! Vimos tu opinión sobre ${CF.name} y queremos escucharte. ¿Podés contarnos qué podemos mejorar?`;
+      const wa = x.rating <= 3 && x.phone ? `<a class="btn sm" target="_blank" rel="noopener" href="https://wa.me/${F.digits(x.phone)}?text=${encodeURIComponent(msg)}">Escribir</a>` : "";
+      return `<tr><td>${dshort(x.ts)}</td><td>${esc(x.name)}</td><td><span title="${x.rating} de 5" style="color:${x.rating <= 3 ? "#b0361f" : "#2f6b3a"};white-space:nowrap">${stars(x.rating)}</span></td><td>${x.comment ? esc(x.comment) : "<small>Sin comentario</small>"}</td><td>${wa}</td></tr>`;
+    }).join("") || `<tr><td colspan="5"><small>${svData.summary.answered ? "Ninguna encuesta con ese filtro." : "Todavía no hay encuestas respondidas."}</small></td></tr>`;
+  }
+  async function drawSurveys(){
+    try{ svData = await run(() => F.surveys(tok)); paintSurveys(); }catch(e){}
+  }
+  $("svFilter").addEventListener("change", paintSurveys);
 
   async function drawClients(){
     try{

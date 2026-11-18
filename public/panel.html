@@ -24,7 +24,7 @@
 <div id="app" hidden>
   <header class="top">
     <div class="top-in"><img id="logo" alt=""><h1>Panel<small id="club"></small></h1><a href="caja.html">Ir a caja</a><button id="out" type="button">Salir</button></div>
-    <nav class="nav2"><a href="#resumen">Resumen</a><a href="#recuperar">Recuperar</a><a href="#clientes">Clientes</a><a href="#premios">Premios</a><a href="#whatsapp">WhatsApp</a><a href="#reglas">Reglas</a></nav>
+    <nav class="nav2"><a href="#resumen">Resumen</a><a href="#recuperar">Recuperar</a><a href="#clientes">Clientes</a><a href="#premios">Premios</a><a href="#encuestas">Encuestas</a><a href="#whatsapp">WhatsApp</a><a href="#reglas">Reglas</a></nav>
   </header>
   <main class="wrap">
     <section id="resumen">
@@ -54,6 +54,19 @@
     <section id="premios" class="card">
       <h2>Premios canjeados</h2><p class="sub">Los pendientes se entregan desde la pantalla de caja.</p>
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Premio</th><th>Cliente</th><th>Código</th><th>Estado</th></tr></thead><tbody id="reds"></tbody></table></div>
+    </section>
+
+    <section id="encuestas" class="card">
+      <h2>Encuestas de satisfacción</h2><p class="sub">Lo que respondieron los clientes después de su visita. Las notas de 1 a 3 reciben una disculpa con 10% de descuento; las de 4 y 5, el pedido de reseña en Google.</p>
+      <div class="kpis" id="svKpis"></div>
+      <div class="row2" style="grid-template-columns:auto 1fr;align-items:center;margin-top:12px">
+        <select id="svFilter" aria-label="Filtrar encuestas" style="margin:0">
+          <option value="all">Todas las notas</option>
+          <option value="low">Solo notas bajas (1 a 3)</option>
+          <option value="high">Solo notas altas (4 y 5)</option>
+        </select>
+      </div>
+      <div class="tbl-wrap" style="margin-top:12px"><table class="tbl"><thead><tr><th>Fecha</th><th>Cliente</th><th>Nota</th><th>Comentario</th><th></th></tr></thead><tbody id="svRows"></tbody></table></div>
     </section>
 
     <section id="whatsapp" class="card">
