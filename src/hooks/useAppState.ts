@@ -133,9 +133,8 @@ export function useAppState() {
   const registerDemoAccount = useCallback(
     (payload: {
       fullName: string;
-      email: string;
+      phone: string;
       birthDate: string;
-      whatsappOptIn: boolean;
     }): MemberProfile => {
       const cleanName = payload.fullName.trim();
       const firstName = cleanName.split(/\s+/)[0] || cleanName;
@@ -153,7 +152,8 @@ export function useAppState() {
         customerCode: `${prefix}${codeNum}`,
         fullName: cleanName,
         firstName,
-        email: payload.email.trim(),
+        email: '',
+        phone: payload.phone.trim(),
         birthDate: payload.birthDate,
         memberSince: ym,
         avatarUrl: null,
@@ -162,7 +162,7 @@ export function useAppState() {
         redeemedPoints: 0,
         nextRewardTarget: 300,
         favoriteBranch: INITIAL_MEMBER.favoriteBranch,
-        whatsappOptIn: payload.whatsappOptIn,
+        whatsappOptIn: false,
         notificationsPreviewEnabled: false,
         isCustomDemoAccount: true,
       };
