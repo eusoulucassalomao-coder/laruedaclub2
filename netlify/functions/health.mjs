@@ -13,15 +13,22 @@ export default async (request) => {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return json({ ok: false, database: "not_configured", missing }, 503);
   }
+  // Pistas de formato (só true/false, nunca os valores)
+  const hints = {
+    urlHostIsExpectedProject: /^https:\/\/kwgrsliviyjweluvrkow\.supabase\.co\/?$/.test(String(process.env.SUPABASE_URL || "").trim()),
+    urlHasWhitespace: process.env.SUPABASE_URL !== String(process.env.SUPABASE_URL || "").trim(),
+    serviceKeyLooksLikeJwt: /^eyJ[\w-]+\.[\w-]+\.[\w-]+$/.test(String(process.env.SUPABASE_SERVICE_ROLE_KEY || "")) || /^sb_secret_/.test(String(process.env.SUPABASE_SERVICE_ROLE_KEY || "")),
+  };
   try {
-    const { default: handler } = await import("../lib/health.cjs");
-    const { adapt } = await import("../lib/adapter.mjs");
-    const res = await adapt(handler)(request);
-    const data = await res.json().catch(() => ({}));
-    return json({ ...data, missing }, res.status);
+    const { supabase } = await import("../lib/supabase.cjs");
+    const { data, error } = await supabase.from("restaurants").select("id").eq("slug", "laruedita").maybeSingle();
+    if (error || !data) {
+      return json({ ok: false, database: "unavailable", reason: String((error && (error.message || error.code)) || "restaurant-not-found").slice(0, 120), missing, hints }, 503);
+    }
+    return json({ ok: true, database: "connected", missing, hints }, 200);
   } catch (error) {
     console.error("health", error && error.message);
-    return json({ ok: false, database: "unavailable", missing }, 503);
+    return json({ ok: false, database: "unavailable", reason: String((error && error.message) || "error").slice(0, 120), missing, hints }, 503);
   }
 };
 export const config = { path: "/api/health" };
