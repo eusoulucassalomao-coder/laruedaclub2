@@ -18,6 +18,7 @@ export interface MemberProfile {
   fullName: string;
   firstName: string;
   email: string;
+  phone: string;
   birthDate: string; // YYYY-MM-DD
   memberSince: string; // YYYY-MM
   avatarUrl: string | null;
