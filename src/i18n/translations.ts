@@ -350,7 +350,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       updateAction: 'Actualizar ahora',
       installSuccessToast: 'Club La Ruedita se instaló correctamente.',
       installUnavailableToast:
-        'Tu navegador aún no habilita la instalación directa. Revisa las instrucciones en Perfil.',
+        'La instalación automática no está disponible en este navegador. Abre el enlace en Google Chrome actualizado e inténtalo de nuevo.',
     },
     home: {
       greeting: '¡Hola, {name}!',
@@ -728,7 +728,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       updateAction: 'Update now',
       installSuccessToast: 'Club La Ruedita has been installed.',
       installUnavailableToast:
-        'Direct install prompt is not active in this browser yet. Check the device guide in Profile.',
+        'Automatic installation is unavailable in this browser. Open the link in the latest Google Chrome and try again.',
     },
     home: {
       greeting: 'Hello, {name}!',
@@ -1106,7 +1106,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       updateAction: 'Atualizar agora',
       installSuccessToast: 'Club La Ruedita instalado com sucesso.',
       installUnavailableToast:
-        'Seu navegador ainda não disponibilizou o aviso automático. Veja as instruções em Perfil.',
+        'A instalação automática não está disponível neste navegador. Abra o link no Google Chrome atualizado e tente novamente.',
     },
     home: {
       greeting: 'Olá, {name}!',
