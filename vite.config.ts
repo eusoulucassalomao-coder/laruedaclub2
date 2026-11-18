@@ -14,7 +14,7 @@ export default defineConfig(() => {
         registerType: 'prompt',
         manifestFilename: 'manifest.webmanifest',
         includeAssets: [
-          'icon.svg',
+          'assets/aistudio/image_65c7880b.png',
           'apple-touch-icon.png',
           'pwa-192x192.png',
           'pwa-512x512.png',

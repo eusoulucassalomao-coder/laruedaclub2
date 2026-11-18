@@ -22,6 +22,7 @@ import {
   RewardDefinition,
   TabId,
 } from '../types';
+import { BrandLogo } from '../components/BrandLogo';
 import { SafeImage } from '../components/SafeImage';
 
 interface HomeScreenProps {
@@ -80,10 +81,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         {/* Left: Dominant Focal Anchor — Olive Loyalty Card */}
         <div className="lg:col-span-7 rounded-3xl bg-[#4A5D3F] text-[#FAF7F0] p-6 sm:p-8 flex flex-col justify-between shadow-sm">
           <div>
-            <p className="text-sm text-[#FAF7F0]/80">{t.home.subtitle}</p>
-            <h1 className="mt-1 font-display text-3xl sm:text-4xl font-semibold tracking-tight text-balance">
-              {formatTemplate(t.home.greeting, { name: member.firstName })}
-            </h1>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm text-[#FAF7F0]/80">{t.home.subtitle}</p>
+                <h1 className="mt-1 font-display text-3xl sm:text-4xl font-semibold tracking-tight text-balance">
+                  {formatTemplate(t.home.greeting, { name: member.firstName })}
+                </h1>
+              </div>
+              <BrandLogo variant="icon-only" size="md" />
+            </div>
 
             <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
               <div>
