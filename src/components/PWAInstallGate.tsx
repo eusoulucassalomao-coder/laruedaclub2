@@ -183,7 +183,7 @@ export const PWAInstallGate: React.FC<PWAInstallGateProps> = ({
               <p role="status" className="mt-4 text-center text-xs text-[#6B7365]">
                 {t.pwa.installUnavailableToast}
               </p>
-            )}}
+            )}
           </div>
         )}
 
