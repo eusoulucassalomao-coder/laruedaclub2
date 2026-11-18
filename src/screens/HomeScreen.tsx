@@ -8,7 +8,7 @@ import {
   UserPlus,
   X,
 } from 'lucide-react';
-import { REWARDS_CATALOG } from '../data/demoData';
+import { getRewardCopy } from '../utils/rewardCopy';
 import {
   formatDate,
   formatNumber,
@@ -28,6 +28,7 @@ import { SafeImage } from '../components/SafeImage';
 interface HomeScreenProps {
   member: MemberProfile;
   history: HistoryEntry[];
+  rewards: RewardDefinition[];
   language: Language;
   t: TranslationDictionary;
   isInstalled: boolean;
@@ -42,6 +43,7 @@ interface HomeScreenProps {
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   member,
   history,
+  rewards,
   language,
   t,
   isInstalled,
@@ -54,7 +56,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 }) => {
   const [desktopBannerHidden, setDesktopBannerHidden] = useState(false);
 
-  const featuredRewards = REWARDS_CATALOG.filter((r) => r.featured).slice(0, 3);
+  const featuredRewards = rewards.filter((r) => r.featured).slice(0, 3);
   const recentHistory = history.slice(0, 3);
 
   const progressPct = Math.min(
@@ -287,7 +289,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {featuredRewards.map((reward) => {
-            const copy = t.rewards.items[reward.id];
+            const copy = getRewardCopy(reward, t);
             const unlocked = member.points >= reward.pointsRequired;
             const missing = reward.pointsRequired - member.points;
 
@@ -309,8 +311,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <div className="p-5 flex-1 flex flex-col justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2 text-xs text-[#5A6353]">
-                      <span>{t.rewards.categories[reward.category]}</span>
-                      <span aria-hidden="true">·</span>
+                      {!reward.title && (
+                        <span>{t.rewards.categories[reward.category]}</span>
+                      )}
+                      {!reward.title && <span aria-hidden="true">·</span>}
                       <span
                         className={
                           unlocked

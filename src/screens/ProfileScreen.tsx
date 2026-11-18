@@ -27,8 +27,7 @@ interface ProfileScreenProps {
   onChangeLanguage: (lang: Language) => void;
   onUpdateMember: (patch: Partial<MemberProfile>) => void;
   onOpenRegister: () => void;
-  onSwitchToMaria: () => void;
-  onResetDemoData: () => void;
+  onSignOut: () => void;
   onInstallPwa: () => void;
 }
 
@@ -40,8 +39,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onChangeLanguage,
   onUpdateMember,
   onOpenRegister,
-  onSwitchToMaria,
-  onResetDemoData,
+  onSignOut,
   onInstallPwa,
 }) => {
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -71,32 +69,21 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      editName.trim().length < 2 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail.trim())
-    ) {
+    // Nome e nascimento ficam no banco do clube (só a equipe altera); aqui só e-mail e unidade.
+    if (editEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail.trim())) {
       setEditError(t.profile.validationError);
       return;
     }
 
     setEditError('');
     setSaving(true);
-    window.setTimeout(() => {
-      onUpdateMember({
-        fullName: editName.trim(),
-        email: editEmail.trim(),
-        birthDate: editBirth,
-        favoriteBranch: editBranch,
-      });
-      setSaving(false);
-      setEditModalOpen(false);
-      showFeedback(t.profile.saveSuccess);
-    }, 420);
-  };
-
-  const handleResetDemo = () => {
-    onResetDemoData();
-    showFeedback(t.profile.resetDoneToast);
+    onUpdateMember({
+      email: editEmail.trim(),
+      favoriteBranch: editBranch,
+    });
+    setSaving(false);
+    setEditModalOpen(false);
+    showFeedback(t.profile.saveSuccess);
   };
 
   const initials = member.fullName
@@ -325,49 +312,28 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 </div>
               </button>
 
-              {/* Switch Back to Maria if on custom demo account */}
-              {member.isCustomDemoAccount && (
+              {/* Sair da conta neste aparelho (os dados continuam no banco do clube) */}
+              {!member.isGuest && (
                 <button
                   type="button"
-                  onClick={onSwitchToMaria}
-                  className="w-full py-4 flex items-center justify-between gap-4 text-left hover:opacity-85 transition-opacity"
+                  onClick={onSignOut}
+                  className="w-full py-4 last:pb-1 flex items-center justify-between gap-4 text-left hover:opacity-85 transition-opacity"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#FEF7DC] text-[#8C6413] flex items-center justify-center shrink-0">
-                      <UserCheck className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-xl bg-[#FAF7F0] border border-[#E7DFCC] text-[#5A6353] flex items-center justify-center shrink-0">
+                      <RotateCcw className="w-5 h-5" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-[#293622]">
-                        {t.profile.switchToMaria}
+                        {t.profile.signOutTitle}
                       </p>
                       <p className="text-xs text-[#5A6353] mt-0.5">
-                        {t.profile.switchToMariaDesc}
+                        {t.profile.signOutDesc}
                       </p>
                     </div>
                   </div>
                 </button>
               )}
-
-              {/* Reset Demo Data */}
-              <button
-                type="button"
-                onClick={handleResetDemo}
-                className="w-full py-4 last:pb-1 flex items-center justify-between gap-4 text-left hover:opacity-85 transition-opacity"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#FAF7F0] border border-[#E7DFCC] text-[#5A6353] flex items-center justify-center shrink-0">
-                    <RotateCcw className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#293622]">
-                      {t.profile.resetDemoData}
-                    </p>
-                    <p className="text-xs text-[#5A6353] mt-0.5">
-                      {t.profile.resetDemoDataDesc}
-                    </p>
-                  </div>
-                </div>
-              </button>
             </div>
           </div>
 
@@ -420,8 +386,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   id="edit-name"
                   type="text"
                   value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl bg-white border border-[#D8CEB8] text-sm text-[#1F281B] focus:outline-none focus:border-[#4A5D3F]"
+                  readOnly
+                  disabled
+                  className="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl bg-[#F3EDE0] border border-[#D8CEB8] text-sm text-[#5A6353] cursor-not-allowed"
                 />
               </div>
 
@@ -452,8 +419,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   id="edit-birth"
                   type="date"
                   value={editBirth}
-                  onChange={(e) => setEditBirth(e.target.value)}
-                  className="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl bg-white border border-[#D8CEB8] text-sm text-[#1F281B] focus:outline-none focus:border-[#4A5D3F]"
+                  readOnly
+                  disabled
+                  className="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl bg-[#F3EDE0] border border-[#D8CEB8] text-sm text-[#5A6353] cursor-not-allowed"
                 />
               </div>
 

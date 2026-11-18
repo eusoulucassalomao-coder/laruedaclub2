@@ -1,17 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Send, X } from 'lucide-react';
-import { REWARDS_CATALOG, SECONDARY_LOOKUP_MEMBER } from '../data/demoData';
+import { FidApiError, fidApi } from '../api/fid';
 import {
   formatNumber,
   formatTemplate,
   TranslationDictionary,
 } from '../i18n/translations';
-import { AssistantMessage, Language, MemberProfile, TabId } from '../types';
+import { AssistantMessage, Language, MemberProfile, RewardDefinition, TabId } from '../types';
 
 interface VirtualAssistantDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   member: MemberProfile;
+  rewards: RewardDefinition[];
   language: Language;
   t: TranslationDictionary;
   onNavigate: (tab: TabId) => void;
@@ -29,6 +30,7 @@ export const VirtualAssistantDrawer: React.FC<VirtualAssistantDrawerProps> = ({
   isOpen,
   onClose,
   member,
+  rewards,
   language,
   t,
   onNavigate,
@@ -62,69 +64,65 @@ export const VirtualAssistantDrawer: React.FC<VirtualAssistantDrawerProps> = ({
 
   if (!isOpen) return null;
 
-  const generateReply = (rawInput: string): Omit<AssistantMessage, 'id' | 'sender' | 'timestamp'> => {
+  type Reply = Omit<AssistantMessage, 'id' | 'sender' | 'timestamp'>;
+
+  const generateReply = async (rawInput: string): Promise<Reply> => {
     const clean = rawInput.trim();
     const upper = clean.toUpperCase();
     const lower = clean.toLowerCase();
 
-    // Check explicit codes: SOF4821, MAR4821, or active custom demo code
-    if (upper.includes('SOF4821') || lower.includes('sofia') || lower.includes('sofía')) {
-      return {
-        text: formatTemplate(t.assistant.replyPointsUnlocked, {
-          name: SECONDARY_LOOKUP_MEMBER.fullName,
-          code: SECONDARY_LOOKUP_MEMBER.customerCode,
-          points: formatNumber(SECONDARY_LOOKUP_MEMBER.points, language),
-          branch: SECONDARY_LOOKUP_MEMBER.favoriteBranch,
-        }),
-        action: {
-          type: 'navigate-rewards',
-          label: t.assistant.actionViewRewards,
-        },
-      };
+    // Código de socio (ex.: ANA123): consulta real no banco do clube
+    const codeMatch = upper.match(/\b[A-Z]{2,4}\d{3,5}\b/);
+    if (codeMatch) {
+      try {
+        const found = await fidApi.lookupCode(codeMatch[0]);
+        const target =
+          rewards.find((r) => r.pointsRequired > found.customer.points)?.pointsRequired ??
+          found.customer.points;
+        return {
+          text: formatTemplate(t.assistant.replyPointsFound, {
+            name: found.customer.name,
+            code: found.customer.code,
+            points: formatNumber(found.customer.points, language),
+            target: formatNumber(target, language),
+            remaining: formatNumber(Math.max(0, target - found.customer.points), language),
+          }),
+          action: { type: 'navigate-rewards', label: t.assistant.actionViewRewards },
+        };
+      } catch (error) {
+        if (error instanceof FidApiError && error.code === 'customer-not-found') {
+          return {
+            text: formatTemplate(t.assistant.replyCodeNotFound, { code: codeMatch[0] }),
+          };
+        }
+        return { text: t.common.connectionError };
+      }
     }
 
+    // "Mis puntos": usa a conta ativa neste aparelho
     if (
-      upper.includes('MAR4821') ||
-      upper.includes(member.customerCode.toUpperCase()) ||
-      lower.includes('maría') ||
-      lower.includes('maria') ||
       lower.includes('mis puntos') ||
       lower.includes('my points') ||
       lower.includes('meus pontos') ||
-      lower.includes('saldo')
+      lower.includes('saldo') ||
+      lower.includes('balance')
     ) {
+      if (member.isGuest) {
+        return {
+          text: t.assistant.replyRegisterGuide,
+          action: { type: 'open-register', label: t.assistant.actionOpenRegister },
+        };
+      }
       const remaining = Math.max(0, member.nextRewardTarget - member.points);
-      const replyTemplate =
-        member.points >= 1200
-          ? t.assistant.replyPointsUnlocked
-          : t.assistant.replyPointsFound;
       return {
-        text: formatTemplate(replyTemplate, {
+        text: formatTemplate(t.assistant.replyPointsFound, {
           name: member.fullName,
           code: member.customerCode,
           points: formatNumber(member.points, language),
           target: formatNumber(member.nextRewardTarget, language),
           remaining: formatNumber(remaining, language),
-          branch: member.favoriteBranch,
         }),
-        action: {
-          type: 'lookup-sof',
-          label: t.assistant.actionTrySof,
-        },
-      };
-    }
-
-    // Check if user typed an unknown customer-code-like token (e.g., ABC1234)
-    const unknownCodeMatch = upper.match(/\b[A-Z]{2,4}\d{3,5}\b/);
-    if (unknownCodeMatch) {
-      return {
-        text: formatTemplate(t.assistant.replyCodeNotFound, {
-          code: unknownCodeMatch[0],
-        }),
-        action: {
-          type: 'lookup-mar',
-          label: t.assistant.quickCheckMar,
-        },
+        action: { type: 'navigate-rewards', label: t.assistant.actionViewRewards },
       };
     }
 
@@ -135,22 +133,16 @@ export const VirtualAssistantDrawer: React.FC<VirtualAssistantDrawerProps> = ({
       lower.includes('reward') ||
       lower.includes('canje') ||
       lower.includes('resgat') ||
-      lower.includes('café') ||
-      lower.includes('coffee') ||
-      lower.includes('premio')
+      lower.includes('premio') ||
+      lower.includes('prêmio')
     ) {
-      const unlockedCount = REWARDS_CATALOG.filter(
-        (r) => member.points >= r.pointsRequired
-      ).length;
+      const unlockedCount = rewards.filter((r) => member.points >= r.pointsRequired).length;
       return {
         text: formatTemplate(t.assistant.replyBenefitsSummary, {
           points: formatNumber(member.points, language),
           count: unlockedCount,
         }),
-        action: {
-          type: 'navigate-rewards',
-          label: t.assistant.actionViewRewards,
-        },
+        action: { type: 'navigate-rewards', label: t.assistant.actionViewRewards },
       };
     }
 
@@ -166,10 +158,7 @@ export const VirtualAssistantDrawer: React.FC<VirtualAssistantDrawerProps> = ({
     ) {
       return {
         text: t.assistant.replyRegisterGuide,
-        action: {
-          type: 'open-register',
-          label: t.assistant.actionOpenRegister,
-        },
+        action: { type: 'open-register', label: t.assistant.actionOpenRegister },
       };
     }
 
@@ -184,19 +173,13 @@ export const VirtualAssistantDrawer: React.FC<VirtualAssistantDrawerProps> = ({
     ) {
       return {
         text: t.assistant.replyInstallGuide,
-        action: {
-          type: 'navigate-profile-previews',
-          label: t.assistant.actionOpenPreviews,
-        },
+        action: { type: 'navigate-profile-previews', label: t.assistant.actionOpenPreviews },
       };
     }
 
     return {
       text: t.assistant.replyFallback,
-      action: {
-        type: 'navigate-rewards',
-        label: t.assistant.actionViewRewards,
-      },
+      action: { type: 'navigate-rewards', label: t.assistant.actionViewRewards },
     };
   };
 
@@ -215,20 +198,19 @@ export const VirtualAssistantDrawer: React.FC<VirtualAssistantDrawerProps> = ({
     setInputValue('');
     setIsTyping(true);
 
-    window.setTimeout(() => {
-      const reply = generateReply(content);
-      const assistantMsg: AssistantMessage = {
-        id: `ast-${Date.now()}`,
-        sender: 'assistant',
-        text: reply.text,
-        action: reply.action,
-        timestamp: getTimeLabel(t.locale),
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
-      setIsTyping(false);
-    }, 420);
+    void generateReply(content)
+      .then((reply) => {
+        const assistantMsg: AssistantMessage = {
+          id: `ast-${Date.now()}`,
+          sender: 'assistant',
+          text: reply.text,
+          action: reply.action,
+          timestamp: getTimeLabel(t.locale),
+        };
+        setMessages((prev) => [...prev, assistantMsg]);
+      })
+      .finally(() => setIsTyping(false));
   };
-
   const handleMessageAction = (type: NonNullable<AssistantMessage['action']>['type']) => {
     if (type === 'navigate-rewards') {
       onClose();
@@ -236,10 +218,6 @@ export const VirtualAssistantDrawer: React.FC<VirtualAssistantDrawerProps> = ({
     } else if (type === 'open-register') {
       onClose();
       onOpenRegister();
-    } else if (type === 'lookup-sof') {
-      handleSend('SOF4821');
-    } else if (type === 'lookup-mar') {
-      handleSend('MAR4821');
     } else if (type === 'navigate-profile-previews') {
       onClose();
       onNavigate('profile');
@@ -252,8 +230,6 @@ export const VirtualAssistantDrawer: React.FC<VirtualAssistantDrawerProps> = ({
   };
 
   const quickPrompts = [
-    { label: t.assistant.quickCheckMar, value: 'MAR4821' },
-    { label: t.assistant.quickCheckSof, value: 'SOF4821' },
     { label: t.assistant.quickBenefits, value: t.assistant.quickBenefits },
     { label: t.assistant.quickRegister, value: t.assistant.quickRegister },
     { label: t.assistant.quickInstall, value: t.assistant.quickInstall },

@@ -12,7 +12,9 @@ interface RegistrationModalProps {
     fullName: string;
     phone: string;
     birthDate: string;
-  }) => MemberProfile;
+    consent: boolean;
+    ref?: string;
+  }) => Promise<MemberProfile>;
 }
 
 type LegalDocKey = 'terms' | 'privacy' | 'cookies';
@@ -26,6 +28,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [birthDate, setBirthDate] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -38,6 +42,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     setFullName('');
     setPhone('');
     setBirthDate('');
+    setConsent(false);
+    setSubmitError('');
     setErrors({});
     setSubmitting(false);
     setCreatedProfile(null);
@@ -45,18 +51,22 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     onClose();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const nextErrors: Record<string, string> = {};
 
     if (fullName.trim().length < 2) {
       nextErrors.fullName = t.registration.errorNameRequired;
     }
-    if (phone.replace(/\\D/g, '').length < 8) {
+    const phoneDigits = phone.replace(/\D/g, '');
+    if (phoneDigits.length < 8 || phoneDigits.length > 15) {
       nextErrors.phone = t.registration.errorPhoneInvalid;
     }
     if (!birthDate) {
       nextErrors.birthDate = t.registration.errorBirthRequired;
+    }
+    if (!consent) {
+      nextErrors.consent = t.registration.errorConsentRequired;
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -65,16 +75,29 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     }
 
     setErrors({});
+    setSubmitError('');
     setSubmitting(true);
-    window.setTimeout(() => {
-      const profile = onRegister({
-        fullName,
-        phone,
+    try {
+      // código de quem convidou, se o link tiver ?ref=
+      const ref = new URLSearchParams(window.location.search).get('ref') ?? undefined;
+      const profile = await onRegister({
+        fullName: fullName.trim(),
+        phone: phoneDigits,
         birthDate,
+        consent,
+        ref,
       });
       setCreatedProfile(profile);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      setSubmitError(
+        message && message !== 'server' && message !== 'network'
+          ? message
+          : t.registration.errorGeneric
+      );
+    } finally {
       setSubmitting(false);
-    }, 550);
+    }
   };
 
   return (
@@ -226,6 +249,27 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 )}
               </div>
 
+              <div>
+                <label className="flex items-start gap-2.5 text-xs text-[#4D5647] leading-relaxed cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[#4A5D3F]"
+                  />
+                  <span>{t.registration.consentLabel}</span>
+                </label>
+                {errors.consent && (
+                  <p className="mt-1 text-xs text-[#9E3B2B] font-medium">{errors.consent}</p>
+                )}
+              </div>
+
+              {submitError && (
+                <p role="alert" className="text-xs text-[#9E3B2B] font-medium">
+                  {submitError}
+                </p>
+              )}
+
               <button
                 type="submit"
                 disabled={submitting}
@@ -265,9 +309,6 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 .
               </p>
 
-              <p className="text-[11px] text-center text-[#7B8275]">
-                {t.registration.demoNotice}
-              </p>
             </form>
           </>
         )}

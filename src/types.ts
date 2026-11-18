@@ -30,6 +30,8 @@ export interface MemberProfile {
   whatsappOptIn: boolean;
   notificationsPreviewEnabled: boolean;
   isCustomDemoAccount?: boolean;
+  /** true enquanto não há cadastro/sessão (nenhum dado de cliente). */
+  isGuest?: boolean;
 }
 
 export interface DemoLookupProfile {
@@ -49,6 +51,9 @@ export interface RewardDefinition {
   imageUrl: string;
   featured: boolean;
   codePrefix: string;
+  /** Quando vem do banco (config do restaurante), título e nota reais. */
+  title?: string;
+  note?: string;
 }
 
 export interface HistoryEntry {
@@ -71,7 +76,7 @@ export interface AssistantMessage {
   text: string;
   timestamp: string;
   action?: {
-    type: 'navigate-rewards' | 'open-register' | 'lookup-sof' | 'lookup-mar' | 'navigate-profile-previews';
+    type: 'navigate-rewards' | 'open-register' | 'navigate-profile-previews';
     label: string;
   };
 }

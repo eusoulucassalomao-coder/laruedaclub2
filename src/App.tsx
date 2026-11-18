@@ -26,10 +26,11 @@ export default function App() {
     history,
     setLanguage,
     updateMember,
-    simulateRedeemReward,
-    registerDemoAccount,
-    switchBackToMaria,
-    resetDemoData,
+    rewards,
+    status,
+    redeemReward,
+    registerAccount,
+    signOut,
   } = useAppState();
 
   const { platform, isInstallable, isInstalled, install } = usePWAInstall();
@@ -129,6 +130,7 @@ export default function App() {
               <HomeScreen
                 member={member}
                 history={history}
+                rewards={rewards}
                 language={language}
                 t={t}
                 isInstalled={isInstalled}
@@ -144,6 +146,7 @@ export default function App() {
             {activeTab === 'points' && (
               <PointsScreen
                 member={member}
+                rewards={rewards}
                 history={history}
                 language={language}
                 t={t}
@@ -152,6 +155,7 @@ export default function App() {
 
             {activeTab === 'rewards' && (
               <RewardsScreen
+                rewards={rewards}
                 currentPoints={member.points}
                 language={language}
                 t={t}
@@ -172,8 +176,7 @@ export default function App() {
                 onChangeLanguage={setLanguage}
                 onUpdateMember={updateMember}
                 onOpenRegister={() => setRegisterOpen(true)}
-                onSwitchToMaria={switchBackToMaria}
-                onResetDemoData={resetDemoData}
+                onSignOut={signOut}
                 onInstallPwa={handleInstallAction}
               />
             )}
@@ -195,6 +198,15 @@ export default function App() {
         onClose={() => setNotificationPromptOpen(false)}
       />
 
+      {status === 'error' && (
+        <div
+          role="alert"
+          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-md rounded-2xl bg-[#9E3B2B] text-white px-4 py-3 text-sm font-medium shadow-lg text-center"
+        >
+          {t.common.connectionError}
+        </div>
+      )}
+
       {/* Global Toast Notification */}
       {globalToast && (
         <div
@@ -209,11 +221,16 @@ export default function App() {
       {/* Reward Details & Demo Redemption Modal */}
       <RewardDetailModal
         reward={selectedReward}
+        isGuest={member.isGuest === true}
+        onOpenRegister={() => {
+          setSelectedReward(null);
+          setRegisterOpen(true);
+        }}
         currentPoints={member.points}
         language={language}
         t={t}
         onClose={() => setSelectedReward(null)}
-        onConfirmRedeem={simulateRedeemReward}
+        onConfirmRedeem={redeemReward}
       />
 
       {/* Digital Member Pass Modal */}
@@ -230,7 +247,7 @@ export default function App() {
         isOpen={registerOpen}
         onClose={() => setRegisterOpen(false)}
         t={t}
-        onRegister={registerDemoAccount}
+        onRegister={registerAccount}
       />
 
       {/* Virtual Assistant Drawer (Header Waving Hand Trigger) */}
@@ -238,6 +255,7 @@ export default function App() {
         isOpen={assistantOpen}
         onClose={() => setAssistantOpen(false)}
         member={member}
+        rewards={rewards}
         language={language}
         t={t}
         onNavigate={handleNavigate}

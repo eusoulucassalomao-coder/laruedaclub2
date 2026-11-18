@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { Award, Check, RefreshCw } from 'lucide-react';
-import { POINT_MILESTONES } from '../data/demoData';
 import {
   formatDate,
   formatNumber,
   formatTemplate,
   TranslationDictionary,
 } from '../i18n/translations';
-import { HistoryEntry, Language, MemberProfile } from '../types';
+import { HistoryEntry, Language, MemberProfile, RewardDefinition } from '../types';
 
 interface PointsScreenProps {
   member: MemberProfile;
   history: HistoryEntry[];
+  rewards: RewardDefinition[];
   language: Language;
   t: TranslationDictionary;
 }
@@ -21,9 +21,14 @@ type PointsFilter = 'all' | 'earned' | 'used';
 export const PointsScreen: React.FC<PointsScreenProps> = ({
   member,
   history,
+  rewards,
   language,
   t,
 }) => {
+  // Marcos = custo real de cada prêmio configurado no banco
+  const POINT_MILESTONES = Array.from(new Set(rewards.map((r) => r.pointsRequired))).sort(
+    (a, b) => a - b
+  );
   const [filter, setFilter] = useState<PointsFilter>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
 

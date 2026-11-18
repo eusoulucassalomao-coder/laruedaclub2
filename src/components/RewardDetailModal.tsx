@@ -7,18 +7,23 @@ import {
 } from '../i18n/translations';
 import { Language, RewardDefinition } from '../types';
 import { SafeImage } from './SafeImage';
+import { getRewardCopy } from '../utils/rewardCopy';
 
 interface RewardDetailModalProps {
   reward: RewardDefinition | null;
+  isGuest: boolean;
+  onOpenRegister: () => void;
   currentPoints: number;
   language: Language;
   t: TranslationDictionary;
   onClose: () => void;
-  onConfirmRedeem: (rewardId: string) => string | null;
+  onConfirmRedeem: (rewardId: string) => Promise<string>;
 }
 
 export const RewardDetailModal: React.FC<RewardDetailModalProps> = ({
   reward,
+  isGuest,
+  onOpenRegister,
   currentPoints,
   language,
   t,
@@ -28,26 +33,32 @@ export const RewardDetailModal: React.FC<RewardDetailModalProps> = ({
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [voucherCode, setVoucherCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [redeemError, setRedeemError] = useState<string | null>(null);
 
   if (!reward) return null;
 
-  const itemCopy = t.rewards.items[reward.id] ?? {
-    title: reward.id,
-    shortDesc: '',
-    fullDesc: '',
-  };
-  const canRedeem = currentPoints >= reward.pointsRequired;
+  const itemCopy = getRewardCopy(reward, t);
+  const canRedeem = !isGuest && currentPoints >= reward.pointsRequired;
   const missing = Math.max(0, reward.pointsRequired - currentPoints);
   const remainingAfter = Math.max(0, currentPoints - reward.pointsRequired);
 
-  const handleSimulateRedeem = () => {
+  // Resgate real: o servidor confere os pontos e devolve o código para mostrar no caixa.
+  const handleRedeem = async () => {
     if (!canRedeem || isRedeeming) return;
     setIsRedeeming(true);
-    window.setTimeout(() => {
-      const code = onConfirmRedeem(reward.id);
-      setVoucherCode(code);
+    setRedeemError(null);
+    try {
+      setVoucherCode(await onConfirmRedeem(reward.id));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      setRedeemError(
+        message && message !== 'server' && message !== 'network'
+          ? message
+          : t.common.connectionError
+      );
+    } finally {
       setIsRedeeming(false);
-    }, 550);
+    }
   };
 
   const handleCopyVoucher = async () => {
@@ -65,6 +76,7 @@ export const RewardDetailModal: React.FC<RewardDetailModalProps> = ({
     setVoucherCode(null);
     setIsRedeeming(false);
     setCopied(false);
+    setRedeemError(null);
     onClose();
   };
 
@@ -174,8 +186,12 @@ export const RewardDetailModal: React.FC<RewardDetailModalProps> = ({
 
             <div className="p-6">
               <div className="flex items-center gap-2 text-xs text-[#5A6353]">
-                <span>{t.rewards.categories[reward.category]}</span>
-                <span aria-hidden="true">·</span>
+                {!reward.title && (
+                  <>
+                    <span>{t.rewards.categories[reward.category]}</span>
+                    <span aria-hidden="true">·</span>
+                  </>
+                )}
                 <span
                   className={
                     canRedeem
@@ -235,24 +251,32 @@ export const RewardDetailModal: React.FC<RewardDetailModalProps> = ({
                 </p>
               </div>
 
+              {redeemError && (
+                <p role="alert" className="mt-4 text-xs text-[#9E3B2B] font-medium">
+                  {redeemError}
+                </p>
+              )}
+
               <div className="mt-6 flex flex-col sm:flex-row gap-3">
                 <button
                   type="button"
-                  onClick={handleSimulateRedeem}
-                  disabled={!canRedeem || isRedeeming}
+                  onClick={isGuest ? onOpenRegister : handleRedeem}
+                  disabled={isGuest ? false : !canRedeem || isRedeeming}
                   className={`flex-1 min-h-[48px] px-5 py-3 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
-                    canRedeem
+                    canRedeem || isGuest
                       ? 'bg-[#4A5D3F] hover:bg-[#38492F] text-[#FAF7F0] active:scale-[0.98]'
                       : 'bg-[#E7DFCC] text-[#6B7365] cursor-not-allowed'
                   }`}
                 >
-                  {!canRedeem && <Lock className="w-4 h-4" />}
+                  {!canRedeem && !isGuest && <Lock className="w-4 h-4" />}
                   <span>
-                    {isRedeeming
-                      ? t.rewards.simulatingRedeem
-                      : canRedeem
-                        ? t.rewards.simulateRedeemBtn
-                        : t.rewards.insufficientPointsBtn}
+                    {isGuest
+                      ? t.home.actionRegister
+                      : isRedeeming
+                        ? t.rewards.simulatingRedeem
+                        : canRedeem
+                          ? t.rewards.simulateRedeemBtn
+                          : t.rewards.insufficientPointsBtn}
                   </span>
                 </button>
                 <button

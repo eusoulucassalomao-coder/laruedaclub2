@@ -1,218 +1,330 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  INITIAL_HISTORY,
-  INITIAL_MEMBER,
-  POINT_MILESTONES,
-  REWARDS_CATALOG,
-} from '../data/demoData';
-import { HistoryEntry, Language, MemberProfile } from '../types';
+  ApiConfig,
+  ApiCustomer,
+  ApiMe,
+  ApiReward,
+  FidApiError,
+  fidApi,
+} from '../api/fid';
+import { HistoryEntry, Language, MemberProfile, RewardDefinition } from '../types';
 
-const STORAGE_KEY = 'club_la_ruedita_demo_v1';
+const LEGACY_DEMO_KEY = 'club_la_ruedita_demo_v1';
+const PREFS_KEY = 'club_la_ruedita_prefs_v2';
+const TOKEN_KEY = 'club-la-ruedita-token-v1';
 
-interface PersistedState {
+/** Preferências que o banco ainda não guarda (ficam só neste aparelho). */
+interface LocalPrefs {
   language: Language;
-  member: MemberProfile;
-  history: HistoryEntry[];
+  email: string;
+  favoriteBranch: string;
+  whatsappOptIn: boolean;
+  notificationsPreviewEnabled: boolean;
 }
 
-function getNextTarget(points: number): number {
-  const next = POINT_MILESTONES.find((m) => m > points);
-  return next ?? POINT_MILESTONES[POINT_MILESTONES.length - 1];
-}
+const DEFAULT_PREFS: LocalPrefs = {
+  language: 'es',
+  email: '',
+  favoriteBranch: 'La Ruedita — Casa Central',
+  whatsappOptIn: false,
+  notificationsPreviewEnabled: false,
+};
 
-function loadInitialState(): PersistedState {
-  if (typeof window === 'undefined') {
-    return {
-      language: 'es',
-      member: INITIAL_MEMBER,
-      history: INITIAL_HISTORY,
-    };
-  }
+const GUEST_NAME: Record<Language, string> = {
+  es: 'invitado',
+  en: 'guest',
+  pt: 'convidado',
+};
+
+function readStorage(key: string): string | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return {
-        language: 'es',
-        member: INITIAL_MEMBER,
-        history: INITIAL_HISTORY,
-      };
-    }
-    const parsed = JSON.parse(raw) as Partial<PersistedState>;
-    const lang: Language =
-      parsed.language === 'en' || parsed.language === 'pt' || parsed.language === 'es'
-        ? parsed.language
-        : 'es';
-    return {
-      language: lang,
-      member: parsed.member ? { ...INITIAL_MEMBER, ...parsed.member } : INITIAL_MEMBER,
-      history: Array.isArray(parsed.history) ? parsed.history : INITIAL_HISTORY,
-    };
+    return window.localStorage.getItem(key);
   } catch {
-    return {
-      language: 'es',
-      member: INITIAL_MEMBER,
-      history: INITIAL_HISTORY,
-    };
+    return null;
   }
 }
+
+function writeStorage(key: string, value: string | null) {
+  try {
+    if (value === null) window.localStorage.removeItem(key);
+    else window.localStorage.setItem(key, value);
+  } catch {
+    // armazenamento indisponível (modo privado etc.)
+  }
+}
+
+function loadPrefs(): LocalPrefs {
+  const isLang = (v: unknown): v is Language => v === 'es' || v === 'en' || v === 'pt';
+  let prefs = { ...DEFAULT_PREFS };
+  try {
+    const raw = readStorage(PREFS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<LocalPrefs>;
+      prefs = {
+        ...prefs,
+        ...parsed,
+        language: isLang(parsed.language) ? parsed.language : prefs.language,
+      };
+    } else {
+      // migra só o idioma do estado de demonstração antigo
+      const legacy = readStorage(LEGACY_DEMO_KEY);
+      if (legacy) {
+        const parsed = JSON.parse(legacy) as { language?: unknown };
+        if (isLang(parsed.language)) prefs.language = parsed.language;
+      }
+    }
+  } catch {
+    // ignora JSON inválido
+  }
+  // dados fictícios antigos não devem continuar no aparelho
+  writeStorage(LEGACY_DEMO_KEY, null);
+  return prefs;
+}
+
+function toRewards(list: ApiReward[] | undefined): RewardDefinition[] {
+  return (list ?? [])
+    .filter((r) => r && r.id && Number(r.pts) > 0)
+    .map((r, index) => ({
+      id: r.id,
+      pointsRequired: Number(r.pts),
+      category: 'cafe' as const,
+      imageUrl: r.img ? (r.img.startsWith('/') ? r.img : `/${r.img}`) : '/assets/logo.webp',
+      featured: index < 3,
+      codePrefix: 'P',
+      title: r.name,
+      note: r.note ?? '',
+    }))
+    .sort((a, b) => a.pointsRequired - b.pointsRequired);
+}
+
+function nextTarget(points: number, rewards: RewardDefinition[]): number {
+  if (rewards.length === 0) return Math.max(points, 1);
+  const next = rewards.find((r) => r.pointsRequired > points);
+  return (next ?? rewards[rewards.length - 1]).pointsRequired;
+}
+
+function toMember(
+  customer: ApiCustomer,
+  rewards: RewardDefinition[],
+  prefs: LocalPrefs
+): MemberProfile {
+  const firstName = customer.name.trim().split(/\s+/)[0] || customer.name;
+  return {
+    id: customer.id,
+    customerCode: customer.code,
+    fullName: customer.name,
+    firstName,
+    email: prefs.email,
+    phone: customer.phone,
+    birthDate: customer.birthday ?? '',
+    memberSince: (customer.createdAt || '').slice(0, 7),
+    avatarUrl: null,
+    points: customer.points,
+    lifetimePoints: customer.lifetime,
+    redeemedPoints: Math.max(0, customer.lifetime - customer.points),
+    nextRewardTarget: nextTarget(customer.points, rewards),
+    favoriteBranch: prefs.favoriteBranch,
+    whatsappOptIn: prefs.whatsappOptIn,
+    notificationsPreviewEnabled: prefs.notificationsPreviewEnabled,
+    isGuest: false,
+  };
+}
+
+function guestMember(language: Language, prefs: LocalPrefs, rewards: RewardDefinition[]): MemberProfile {
+  return {
+    id: '',
+    customerCode: '—',
+    fullName: '',
+    firstName: GUEST_NAME[language],
+    email: '',
+    phone: '',
+    birthDate: '',
+    memberSince: new Date().toISOString().slice(0, 7),
+    avatarUrl: null,
+    points: 0,
+    lifetimePoints: 0,
+    redeemedPoints: 0,
+    nextRewardTarget: nextTarget(0, rewards),
+    favoriteBranch: prefs.favoriteBranch,
+    whatsappOptIn: false,
+    notificationsPreviewEnabled: prefs.notificationsPreviewEnabled,
+    isGuest: true,
+  };
+}
+
+function toHistory(me: ApiMe): HistoryEntry[] {
+  const used = new Set<string>();
+  return me.history.map((row, index) => {
+    const delta = Number(row.points) || 0;
+    const entry: HistoryEntry = {
+      id: `${row.created_at}-${index}`,
+      type: delta >= 0 ? 'earned' : 'redeemed',
+      pointsDelta: delta,
+      dateIso: String(row.created_at || '').slice(0, 10),
+      customTitle: row.note || row.type || undefined,
+    };
+    if (delta < 0) {
+      // liga o extrato ao código do prêmio correspondente
+      const match = me.redemptions.find(
+        (r) => !used.has(r.code) && r.points === -delta && (row.note ?? '').includes(r.name)
+      ) ?? me.redemptions.find((r) => !used.has(r.code) && r.points === -delta);
+      if (match) {
+        used.add(match.code);
+        entry.voucherCode = match.code;
+        if (match.status === 'canjeado') entry.type = 'used';
+      }
+    }
+    return entry;
+  });
+}
+
+export type LoadStatus = 'loading' | 'ready' | 'error';
 
 export function useAppState() {
-  const [state, setState] = useState<PersistedState>(() => loadInitialState());
+  const [prefs, setPrefs] = useState<LocalPrefs>(() => loadPrefs());
+  const [rewards, setRewards] = useState<RewardDefinition[]>([]);
+  const [customer, setCustomer] = useState<ApiMe | null>(null);
+  const [status, setStatus] = useState<LoadStatus>('loading');
+  const tokenRef = useRef<string>(readStorage(TOKEN_KEY) ?? '');
+  const rewardsRef = useRef<RewardDefinition[]>([]);
 
+  // idioma / preferências locais
   useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      document.documentElement.lang = state.language;
-    } catch {
-      // Ignore storage quota issues in restricted preview environments
-    }
-  }, [state]);
+    writeStorage(PREFS_KEY, JSON.stringify(prefs));
+    document.documentElement.lang = prefs.language;
+  }, [prefs]);
 
-  const setLanguage = useCallback((language: Language) => {
-    setState((prev) => ({ ...prev, language }));
+  const applyMe = useCallback((me: ApiMe | null) => {
+    setCustomer(me);
   }, []);
 
-  const updateMember = useCallback(
-    (patch: Partial<MemberProfile>) => {
-      setState((prev) => {
-        const nextFullName = patch.fullName ?? prev.member.fullName;
-        const firstName = nextFullName.trim().split(/\s+/)[0] || prev.member.firstName;
-        return {
-          ...prev,
-          member: {
-            ...prev.member,
-            ...patch,
-            firstName,
-          },
-        };
-      });
-    },
-    []
+  const refresh = useCallback(async () => {
+    const token = tokenRef.current;
+    if (!token) {
+      applyMe(null);
+      return;
+    }
+    try {
+      applyMe(await fidApi.me(token));
+    } catch (error) {
+      // link/token inválido: volta ao estado de visitante
+      if (error instanceof FidApiError && error.status === 401) {
+        tokenRef.current = '';
+        writeStorage(TOKEN_KEY, null);
+        applyMe(null);
+      } else {
+        throw error;
+      }
+    }
+  }, [applyMe]);
+
+  // carga inicial: prêmios reais + cliente (se houver sessão)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const cfg: ApiConfig = await fidApi.config();
+        if (cancelled) return;
+        const list = toRewards(cfg.config?.rewards);
+        rewardsRef.current = list;
+        setRewards(list);
+        await refresh();
+        if (!cancelled) setStatus('ready');
+      } catch {
+        if (!cancelled) setStatus('error');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [refresh]);
+
+  const member = useMemo<MemberProfile>(
+    () =>
+      customer
+        ? toMember(customer.customer, rewards, prefs)
+        : guestMember(prefs.language, prefs, rewards),
+    [customer, rewards, prefs]
   );
 
-  const simulateRedeemReward = useCallback((rewardId: string): string | null => {
-    const reward = REWARDS_CATALOG.find((r) => r.id === rewardId);
-    if (!reward) return null;
+  const history = useMemo<HistoryEntry[]>(
+    () => (customer ? toHistory(customer) : []),
+    [customer]
+  );
 
-    let generatedVoucher: string | null = null;
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    const code = `LR-DEMO-${randomNum}`;
-
-    setState((prev) => {
-      if (prev.member.points < reward.pointsRequired) {
-        return prev;
-      }
-      generatedVoucher = code;
-      const newPoints = prev.member.points - reward.pointsRequired;
-      const todayIso = new Date().toISOString().slice(0, 10);
-      const newEntry: HistoryEntry = {
-        id: `hist-demo-${Date.now()}`,
-        type: 'redeemed',
-        pointsDelta: -reward.pointsRequired,
-        dateIso: todayIso,
-        rewardId: reward.id,
-        descriptionKey: 'hist_demo_redemption_desc',
-        voucherCode: code,
-        branchName: prev.member.favoriteBranch.replace('La Ruedita — ', ''),
-      };
-      return {
-        ...prev,
-        member: {
-          ...prev.member,
-          points: newPoints,
-          redeemedPoints: prev.member.redeemedPoints + reward.pointsRequired,
-          nextRewardTarget: getNextTarget(newPoints),
-        },
-        history: [newEntry, ...prev.history],
-      };
-    });
-
-    return generatedVoucher ?? code;
+  const setLanguage = useCallback((language: Language) => {
+    setPrefs((prev) => ({ ...prev, language }));
   }, []);
 
-  const registerDemoAccount = useCallback(
-    (payload: {
+  /** Só preferências locais (e-mail, unidade, avisos). Nome/telefone/nascimento vivem no banco. */
+  const updateMember = useCallback((patch: Partial<MemberProfile>) => {
+    setPrefs((prev) => ({
+      ...prev,
+      email: patch.email ?? prev.email,
+      favoriteBranch: patch.favoriteBranch ?? prev.favoriteBranch,
+      whatsappOptIn: patch.whatsappOptIn ?? prev.whatsappOptIn,
+      notificationsPreviewEnabled:
+        patch.notificationsPreviewEnabled ?? prev.notificationsPreviewEnabled,
+    }));
+  }, []);
+
+  /** Resgate real: o servidor valida os pontos e devolve o código do prêmio. */
+  const redeemReward = useCallback(
+    async (rewardId: string): Promise<string> => {
+      const token = tokenRef.current;
+      if (!token) throw new FidApiError('guest', 'guest', 401);
+      const result = await fidApi.claim(token, rewardId);
+      await refresh().catch(() => undefined);
+      return result.redemption.code;
+    },
+    [refresh]
+  );
+
+  /** Cadastro real. Guarda o token e carrega o perfil. */
+  const registerAccount = useCallback(
+    async (payload: {
       fullName: string;
       phone: string;
       birthDate: string;
-    }): MemberProfile => {
-      const cleanName = payload.fullName.trim();
-      const firstName = cleanName.split(/\s+/)[0] || cleanName;
-      const prefix = cleanName
-        .replace(/[^A-Za-z]/g, '')
-        .slice(0, 3)
-        .toUpperCase()
-        .padEnd(3, 'L');
-      const codeNum = Math.floor(1000 + Math.random() * 9000);
-      const todayIso = new Date().toISOString().slice(0, 10);
-      const ym = todayIso.slice(0, 7);
-
-      const newMember: MemberProfile = {
-        id: `member-demo-${Date.now()}`,
-        customerCode: `${prefix}${codeNum}`,
-        fullName: cleanName,
-        firstName,
-        email: '',
-        phone: payload.phone.trim(),
-        birthDate: payload.birthDate,
-        memberSince: ym,
-        avatarUrl: null,
-        points: 100,
-        lifetimePoints: 100,
-        redeemedPoints: 0,
-        nextRewardTarget: 300,
-        favoriteBranch: INITIAL_MEMBER.favoriteBranch,
-        whatsappOptIn: false,
-        notificationsPreviewEnabled: false,
-        isCustomDemoAccount: true,
-      };
-
-      const welcomeEntry: HistoryEntry = {
-        id: `hist-welcome-${Date.now()}`,
-        type: 'earned',
-        pointsDelta: 100,
-        dateIso: todayIso,
-        titleKey: 'hist_new_member_title',
-        descriptionKey: 'hist_new_member_desc',
-        branchName: 'Club La Ruedita',
-      };
-
-      setState((prev) => ({
-        ...prev,
-        member: newMember,
-        history: [welcomeEntry],
-      }));
-
-      return newMember;
+      consent: boolean;
+      ref?: string;
+    }): Promise<MemberProfile> => {
+      const result = await fidApi.register({
+        name: payload.fullName,
+        phone: payload.phone,
+        birthday: payload.birthDate,
+        consent: payload.consent,
+        waConsent: payload.consent,
+        ref: payload.ref,
+      });
+      tokenRef.current = result.token;
+      writeStorage(TOKEN_KEY, result.token);
+      const me = await fidApi.me(result.token);
+      applyMe(me);
+      return toMember(me.customer, rewardsRef.current, prefs);
     },
-    []
+    [applyMe, prefs]
   );
 
-  const switchBackToMaria = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      member: INITIAL_MEMBER,
-      history: INITIAL_HISTORY,
-    }));
-  }, []);
-
-  const resetDemoData = useCallback(() => {
-    setState((prev) => ({
-      language: prev.language,
-      member: INITIAL_MEMBER,
-      history: INITIAL_HISTORY,
-    }));
-  }, []);
+  /** Sai da conta neste aparelho (os dados continuam no banco). */
+  const signOut = useCallback(() => {
+    tokenRef.current = '';
+    writeStorage(TOKEN_KEY, null);
+    applyMe(null);
+  }, [applyMe]);
 
   return {
-    language: state.language,
-    member: state.member,
-    history: state.history,
+    language: prefs.language,
+    member,
+    history,
+    rewards,
+    status,
+    isGuest: !customer,
     setLanguage,
     updateMember,
-    simulateRedeemReward,
-    registerDemoAccount,
-    switchBackToMaria,
-    resetDemoData,
+    redeemReward,
+    registerAccount,
+    signOut,
+    refresh,
   };
 }

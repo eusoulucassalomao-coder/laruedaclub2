@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowRight, Lock } from 'lucide-react';
-import { REWARDS_CATALOG } from '../data/demoData';
+import { getRewardCopy } from '../utils/rewardCopy';
 import {
   formatNumber,
   formatTemplate,
@@ -10,6 +10,7 @@ import { Language, RewardCategory, RewardDefinition } from '../types';
 import { SafeImage } from '../components/SafeImage';
 
 interface RewardsScreenProps {
+  rewards: RewardDefinition[];
   currentPoints: number;
   language: Language;
   t: TranslationDictionary;
@@ -20,6 +21,7 @@ type AvailabilityFilter = 'all' | 'available' | 'locked';
 type CategoryFilter = 'all' | RewardCategory;
 
 export const RewardsScreen: React.FC<RewardsScreenProps> = ({
+  rewards,
   currentPoints,
   language,
   t,
@@ -28,7 +30,10 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
   const [availability, setAvailability] = useState<AvailabilityFilter>('all');
   const [category, setCategory] = useState<CategoryFilter>('all');
 
-  const filteredRewards = REWARDS_CATALOG.filter((reward) => {
+  // Os prêmios reais não têm categoria (café/padaria...): o filtro por categoria só faz sentido nos exemplos antigos.
+  const hasCategories = rewards.some((reward) => !reward.title);
+
+  const filteredRewards = rewards.filter((reward) => {
     const isUnlocked = currentPoints >= reward.pointsRequired;
     if (availability === 'available' && !isUnlocked) return false;
     if (availability === 'locked' && isUnlocked) return false;
@@ -94,7 +99,11 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
         </div>
 
         {/* Category Filter Buttons */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+        <div
+          className={`flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 ${
+            hasCategories ? '' : 'hidden'
+          }`}
+        >
           {(
             ['all', 'cafe', 'bakery', 'experiences', 'boutique'] as const
           ).map((cat) => (
@@ -134,7 +143,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRewards.map((reward) => {
-            const copy = t.rewards.items[reward.id];
+            const copy = getRewardCopy(reward, t);
             const unlocked = currentPoints >= reward.pointsRequired;
             const missing = Math.max(0, reward.pointsRequired - currentPoints);
 
@@ -160,8 +169,12 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
                   <div>
                     {/* Clean unboxed metadata row */}
                     <div className="flex items-center gap-2 text-xs text-[#5A6353]">
-                      <span>{t.rewards.categories[reward.category]}</span>
-                      <span aria-hidden="true">·</span>
+                      {!reward.title && (
+                        <>
+                          <span>{t.rewards.categories[reward.category]}</span>
+                          <span aria-hidden="true">·</span>
+                        </>
+                      )}
                       <span
                         className={`inline-flex items-center gap-1 ${
                           unlocked
