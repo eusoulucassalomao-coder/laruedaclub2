@@ -61,15 +61,18 @@ export default function App() {
   }, []);
 
   const handleInstallAction = useCallback(async () => {
-    if (isInstallable) {
-      const result = await install();
-      if (result === 'accepted') {
-        showToast(t.pwa.installSuccessToast);
-        return;
-      }
+    if (!isInstallable) {
+      showToast(t.pwa.installUnavailableToast);
+      return;
     }
-    setInstallGateDismissed(false);
-  }, [install, isInstallable, showToast, t.pwa.installSuccessToast]);
+
+    const result = await install();
+    if (result === 'accepted') {
+      showToast(t.pwa.installSuccessToast);
+    } else if (result === 'unavailable') {
+      showToast(t.pwa.installUnavailableToast);
+    }
+  }, [install, isInstallable, showToast, t.pwa.installSuccessToast, t.pwa.installUnavailableToast]);
 
   return (
     <MotionConfig reducedMotion="user">
