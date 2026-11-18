@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-olive-900: #293622;
+  --color-olive-800: #38492F;
+  --color-olive-700: #4A5D3F;
+  --color-olive-600: #5D7450;
+  --color-olive-500: #728B63;
+  --color-olive-100: #EAEFE5;
+  --color-olive-50: #F4F7F0;
+
+  --color-cream-50: #FAF7F0;
+  --color-cream-100: #F3EDE0;
+  --color-cream-200: #E7DFCC;
+  --color-cream-300: #D8CEB8;
+
+  --color-honey-500: #EAB308;
+  --color-honey-400: #FACC15;
+  --color-honey-100: #FEF7DC;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background-color: #FAF7F0;
+    color: #1F281B;
+    scroll-behavior: smooth;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@keyframes gentle-wave {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(16deg); }
+  40% { transform: rotate(-10deg); }
+  60% { transform: rotate(14deg); }
+  80% { transform: rotate(-4deg); }
+}
+
+.animate-wave-hover:hover .wave-hand,
+.wave-hand-once {
+  display: inline-block;
+  transform-origin: 70% 75%;
+  animation: gentle-wave 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-wave-hover:hover .wave-hand,
+  .wave-hand-once {
+    animation: none;
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Club La Ruedita",
+  "description": "Programa de fidelidad digital de Club La Ruedita: consulta tus puntos, descubre beneficios exclusivos y disfruta tu membresía desde cualquier dispositivo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
