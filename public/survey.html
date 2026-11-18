@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Encuesta</title>
+  <style>
+    body{font-family:sans-serif;background:#f5f5f5;margin:0;padding:20px}
+    .card{background:#fff;max-width:400px;margin:40px auto;padding:24px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+    h2{margin-bottom:20px;text-align:center}
+    .choices{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
+    .choice{background:#eee;border:1px solid #ccc;border-radius:50%;width:50px;height:50px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:bold}
+    .choice.selected{background:#007bff;color:#fff;border-color:#007bff}.choice:hover{background:#ddd}
+    textarea{width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;height:70px;margin-bottom:16px}
+    button{width:100%;padding:10px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer}
+    button:disabled{background:#999;cursor:not-allowed}
+    .msg{padding:10px;margin-top:10px;border-radius:4px}.msg.s{background:#d4edda;color:#155724}.msg.e{background:#f8d7da;color:#721c24}.hidden{display:none}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>¿Cómo fue tu experiencia?</h2>
+    <form id="f">
+      <input type="hidden" id="token">
+      <input type="hidden" id="rating">
+      <div class="choices" id="choices">
+        <div class="choice" data-val="1">1</div>
+        <div class="choice" data-val="2">2</div>
+        <div class="choice" data-val="3">3</div>
+        <div class="choice" data-val="4">4</div>
+        <div class="choice" data-val="5">5</div>
+      </div>
+      <textarea id="c" placeholder="Comentario..."></textarea>
+      <button id="b" disabled>Enviar</button>
+      <div id="s" class="msg s hidden"></div>
+      <div id="e" class="msg e hidden"></div>
+    </form>
+  </div>
+  <script>
+    var p=new URLSearchParams(location.search);
+    if(p.has('t'))document.getElementById('token').value=p.get('t');
+    var choices=document.getElementById('choices').children;
+    var rating=document.getElementById('rating');
+    var btn=document.getElementById('b');
+    var success=document.getElementById('s');
+    var error=document.getElementById('e');
+    var form=document.getElementById('f');
+
+    for(var i=0;i<choices.length;i++){
+      choices[i].onclick=function(){
+        for(var j=0;j<choices.length;j++)choices[j].classList.remove('selected');
+        this.classList.add('selected');
+        rating.value=this.getAttribute('data-val');
+        btn.disabled=false;
+      };
+    }
+
+    form.onsubmit=function(e){
+      e.preventDefault();
+      btn.disabled=true;
+      btn.innerHTML='Enviando...';
+      success.classList.add('hidden');
+      error.classList.add('hidden');
+      var t=document.getElementById('token').value;
+      var r=Number(rating.value);
+      var c=document.getElementById('c').value.trim();
+      var data={slug:'laruedita',action:'submit_survey',token:t,rating:r,comment:c};
+
+      fetch('/api/fid',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+        .then(function(response){
+          return response.json().then(function(payload){
+            if(!response.ok) throw new Error(payload.message || 'No se pudo enviar la encuesta');
+            return payload;
+          });
+        })
+        .then(function(payload){
+          if(!payload || !payload.message) throw new Error('No se pudo confirmar la encuesta');
+          success.classList.remove('hidden');
+          success.textContent='¡Tu opinión fue recibida! ¡Gracias por contactarnos!';
+
+          document.getElementById('choices').style.display='none';
+          document.getElementById('c').style.display='none';
+          btn.style.display='none';
+        })
+        .catch(function(err){
+          error.classList.remove('hidden');
+          error.textContent=err.message || 'Error de conexión';
+          btn.disabled=false;
+          btn.innerHTML='Enviar';
+        });
+    };
+  </script>
+</body>
+</html>

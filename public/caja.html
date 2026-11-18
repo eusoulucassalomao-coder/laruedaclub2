@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Caja · Club</title>
+<link rel="icon" href="assets/logo.webp">
+<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/css/intlTelInput.css">
+</head>
+<body>
+<div class="gate" id="gate">
+  <form class="card" id="loginForm">
+    <h2>Caja</h2><p class="sub">Ingresá con tu e-mail y contraseña</p>
+    <label for="cajaEmail">E-mail</label>
+    <input id="cajaEmail" type="email" autocomplete="username" value="caja@2027.com" aria-label="E-mail">
+    <label for="cajaPassword">Contraseña</label>
+    <input id="cajaPassword" type="password" autocomplete="current-password" placeholder="Contraseña" aria-label="Contraseña">
+    <p class="msg err" id="loginMsg" role="alert"></p>
+    <button class="btn full" type="submit">Entrar</button>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <header class="top"><div class="top-in"><img id="logo" alt=""><h1>Caja<small id="club"></small></h1><button id="out" type="button">Salir</button></div></header>
+  <main class="wrap" style="max-width:640px">
+    <div class="tabs" role="tablist">
+      <button class="tab on" data-tab="visita" role="tab">Registrar visita</button>
+      <button class="tab" data-tab="canje" role="tab">Entregar premio</button>
+      <button class="tab" data-tab="nuevo" role="tab">Cliente nuevo</button>
+    </div>
+
+    <section id="p-visita" class="card">
+      <h2>Registrar visita</h2><p class="sub">Buscá al cliente por WhatsApp, nombre o código.</p>
+      <input id="q" type="search" autocomplete="off" placeholder="WhatsApp, nombre o código" aria-label="Buscar cliente">
+      <div class="res" id="res"></div>
+      <div id="sel" hidden>
+        <div class="cust" id="custBox"></div>
+        <label for="amount">Valor de la cuenta ($)</label>
+        <input id="amount" type="tel" inputmode="numeric" placeholder="Ej.: 28500" autocomplete="off">
+        <div class="prev" id="prev" hidden></div>
+        <p class="msg" id="vMsg" role="status"></p>
+        <button class="btn full" id="doVisit" type="button">Registrar visita</button>
+        <div class="row2" style="margin-top:10px"><button class="btn ghost sm" id="bBirth" type="button"></button></div>
+      </div>
+    </section>
+
+    <section id="p-canje" class="card" hidden>
+      <h2>Entregar premio</h2><p class="sub">Pedile el código del premio generado en “Mis puntos” (empieza con P, por ejemplo P48213). No ingreses el código de socio.</p>
+      <input id="code" autocomplete="off" placeholder="Código (ej.: P48213)" autocapitalize="characters" aria-label="Código de premio">
+      <p class="msg" id="cMsg" role="status"></p>
+      <div id="cBox"></div>
+      <button class="btn full" id="doCode" type="button">Buscar código</button>
+    </section>
+
+    <section id="p-nuevo" class="card" hidden>
+      <h2>Cliente nuevo</h2><p class="sub">Alta rápida en el local.</p>
+      <form id="newForm" novalidate>
+        <label>Nombre<input name="name" autocomplete="off" required></label>
+        <label for="phoneInput">WhatsApp</label>
+        <input id="phoneInput" name="phone" type="tel" inputmode="tel" autocomplete="tel" required>
+        <small class="sub">Elegí el país y escribí el número sin el prefijo.</small>
+        <label>Fecha de nacimiento<input name="birthday" type="date" required></label>
+        <p class="sub">Al ingresar al Club, el cliente acepta recibir por WhatsApp información sobre su membresía, puntos, beneficios, cumpleaños y encuestas después de sus visitas. Si no está de acuerdo, no completes el alta.</p>
+        <p class="msg" id="nMsg" role="alert"></p>
+        <button class="btn full" type="submit">Dar de alta</button>
+      </form>
+    </section>
+
+    <section class="card"><h2>Últimas visitas</h2><ul class="list" id="recent"></ul></section>
+  </main>
+</div>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/intlTelInput.min.js"></script>
+<script src="js/caja.js"></script>
+</body>
+</html>

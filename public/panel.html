@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Panel del dueño · Club</title>
+<link rel="icon" href="assets/logo.webp">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+<div class="gate" id="gate">
+  <form class="card" id="passForm">
+    <h2>Panel del dueño</h2><p class="sub">Ingresá con tu cuenta de Supabase</p>
+    <label for="loginEmail">Correo electrónico</label>
+    <input id="loginEmail" type="email" autocomplete="username" placeholder="tu@email.com" aria-label="Correo electrónico" required>
+    <label for="pass">Contraseña</label>
+    <input id="pass" type="password" autocomplete="current-password" placeholder="Tu contraseña" aria-label="Contraseña" required>
+    <p class="msg err" id="passMsg" role="alert"></p>
+    <button class="btn full" id="loginBtn" type="submit">Entrar</button>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <header class="top">
+    <div class="top-in"><img id="logo" alt=""><h1>Panel<small id="club"></small></h1><a href="caja.html">Ir a caja</a><button id="out" type="button">Salir</button></div>
+    <nav class="nav2"><a href="#resumen">Resumen</a><a href="#recuperar">Recuperar</a><a href="#clientes">Clientes</a><a href="#premios">Premios</a><a href="#whatsapp">WhatsApp</a><a href="#reglas">Reglas</a></nav>
+  </header>
+  <main class="wrap">
+    <section id="resumen">
+      <div class="kpis" id="kpis"></div>
+      <div class="grid2">
+        <div class="card"><h2>Visitas por día</h2><p class="sub">Últimos 14 días</p><div class="chart" id="chart"></div></div>
+        <div class="card"><h2>Mejores clientes</h2><p class="sub">Los que más puntos ganaron</p><ul class="list" id="top"></ul>
+          <h2 style="margin-top:18px">Cumpleaños próximos</h2><p class="sub">En los próximos 30 días</p><ul class="list" id="bdays"></ul></div>
+      </div>
+    </section>
+
+    <section id="recuperar" class="card">
+      <h2>Clientes para recuperar</h2><p class="sub" id="inactSub"></p>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Cliente</th><th>Última visita</th><th>Puntos</th><th></th></tr></thead><tbody id="inact"></tbody></table></div>
+    </section>
+
+    <section id="clientes" class="card">
+      <h2>Clientes</h2><p class="sub">Todos los que se unieron al club.</p>
+      <div class="row2" style="grid-template-columns:1fr auto auto;align-items:center">
+        <input id="cq" type="search" placeholder="Buscar por nombre, WhatsApp o código" style="margin:0">
+        <button class="btn sm ghost" id="expC" type="button">Descargar clientes</button>
+        <button class="btn sm ghost" id="expV" type="button">Descargar visitas</button>
+      </div>
+      <div class="tbl-wrap" style="margin-top:12px"><table class="tbl"><thead><tr><th>Cliente</th><th>WhatsApp</th><th>Permite mensajes</th><th>Visitas</th><th>Puntos</th><th>Código</th></tr></thead><tbody id="clients"></tbody></table></div>
+    </section>
+
+    <section id="premios" class="card">
+      <h2>Premios canjeados</h2><p class="sub">Los pendientes se entregan desde la pantalla de caja.</p>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Premio</th><th>Cliente</th><th>Código</th><th>Estado</th></tr></thead><tbody id="reds"></tbody></table></div>
+    </section>
+
+    <section id="whatsapp" class="card">
+      <h2>WhatsApp del local</h2>
+      <p class="sub">Conectá el número del restaurante para que el club mande los mensajes (bienvenida, premios, recordatorios). Es como abrir WhatsApp Web.</p>
+      <p class="wa-badge" id="waState" role="status">Consultando...</p>
+      <div id="waQrBox" hidden>
+        <img id="waQr" alt="Código QR para vincular WhatsApp" width="260" height="260">
+        <ol class="wa-steps">
+          <li>Abrí WhatsApp en el celular del local.</li>
+          <li>Tocá los tres puntitos (o Configuración) y elegí <b>Dispositivos vinculados</b>.</li>
+          <li>Tocá <b>Vincular un dispositivo</b> y escaneá este código.</li>
+        </ol>
+        <p class="sub" id="waPair" hidden></p>
+      </div>
+      <p class="msg" id="waMsg" role="status"></p>
+      <p style="display:flex;gap:10px;flex-wrap:wrap;margin:0">
+        <button class="btn" id="waConnect" type="button">Conectar WhatsApp</button>
+        <button class="btn ghost" id="waLogout" type="button" hidden>Desconectar</button>
+      </p>
+      <details class="wa-tips"><summary>Cuidados para no perder el número</summary>
+        <ul>
+          <li>Usá el <b>número del local</b>, el que ya usan los clientes, con la app <b>WhatsApp Business</b>.</li>
+          <li>El club solo le escribe a quien <b>aceptó</b> y respeta el <b>BAJA</b>. No lo desactives.</li>
+          <li>Si el número es nuevo, no mandes muchos mensajes el primer día: empezá de a poco.</li>
+          <li>No lo uses para mandar promociones masivas por tu cuenta mientras el club esté activo.</li>
+          <li>Si WhatsApp avisa de algo raro, pará y avisanos.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section id="reglas" class="card">
+      <h2>Reglas del programa</h2><p class="sub">Cambiá cuánto se gana y qué se regala. Se aplica al instante.</p>
+      <form id="cfgForm">
+        <div class="cfg-grid">
+          <label>Puntos que se ganan<input name="points" type="number" min="1" step="1"></label>
+          <label>Por cada $ gastados<input name="perAmount" type="number" min="1" step="1"></label>
+          <label>Bienvenida (pts)<input name="welcome" type="number" min="0" step="1"></label>
+          <label>Invitación, cada uno (pts)<input name="referral" type="number" min="0" step="1"></label>
+          <label>Cumpleaños (pts)<input name="birthday" type="number" min="0" step="1"></label>
+          <label>Inactivo desde (días)<input name="inactiveDays" type="number" min="7" step="1"></label>
+        </div>
+        <h2 style="margin-top:20px;font-size:17px">Días con puntos extra</h2><p class="sub">1 = normal, 2 = el doble.</p>
+        <div class="cfg-grid" id="mults"></div>
+        <h2 style="margin-top:20px;font-size:17px">Premios</h2>
+        <div id="rwEdit"></div>
+        <p style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button class="btn sm ghost" id="addRw" type="button">+ Agregar premio</button></p>
+        <p class="msg" id="cfgMsg" role="status"></p>
+        <button class="btn" type="submit">Guardar reglas</button>
+        <button class="btn ghost" id="resetCfg" type="button" style="margin-left:8px">Volver a lo original</button>
+      </form>
+    </section>
+  </main>
+</div>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/panel.js"></script>
+</body>
+</html>
