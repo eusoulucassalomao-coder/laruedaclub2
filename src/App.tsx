@@ -3,6 +3,7 @@ import { AnimatePresence, motion, MotionConfig } from 'motion/react';
 import { Layout } from './components/Layout';
 import { MemberCardModal } from './components/MemberCardModal';
 import { PWAInstallGate } from './components/PWAInstallGate';
+import { NotificationPermissionPrompt } from './components/NotificationPermissionPrompt';
 import { PWAStatusBanners } from './components/PWAStatusBanners';
 import { RegistrationModal } from './components/RegistrationModal';
 import { RewardDetailModal } from './components/RewardDetailModal';
@@ -73,7 +74,10 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-      {/* Device-aware initial install screen (suppressed automatically in standalone mode) */}
+      {/* Notification permission is the first onboarding step on a fresh visit. */}
+      <NotificationPermissionPrompt language={language} />
+
+      {/* Device-aware install screen (suppressed automatically in standalone mode) */}
       <PWAInstallGate
         platform={platform}
         isInstalled={isInstalled}
