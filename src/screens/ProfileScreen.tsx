@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import {
-  Bell,
   Check,
   Download,
   Edit3,
   Globe,
-  MessageCircle,
   RotateCcw,
   UserCheck,
   UserPlus,
@@ -94,14 +92,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       setEditModalOpen(false);
       showFeedback(t.profile.saveSuccess);
     }, 420);
-  };
-
-  const handleToggleNotificationsPreview = () => {
-    // Strictly visual state only — NEVER requests browser Push/Notification permission
-    onUpdateMember({
-      notificationsPreviewEnabled: !member.notificationsPreviewEnabled,
-    });
-    showFeedback(t.profile.notificationsPreviewNotice);
   };
 
   const handleResetDemo = () => {
@@ -257,101 +247,26 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </div>
           </div>
 
-          {/* Preferences */}
-          <div className="pt-6 border-t border-[#F0E9D8] space-y-4">
-            <h3 className="font-display text-lg font-semibold text-[#293622]">
-              {t.profile.preferencesTitle}
-            </h3>
-
-            {/* Favorite branch selector */}
-            <div>
-              <label
-                htmlFor="pref-branch"
-                className="block text-xs font-semibold text-[#5A6353] mb-1.5"
-              >
-                {t.profile.favoriteBranchLabel}
-              </label>
-              <select
-                id="pref-branch"
-                value={member.favoriteBranch}
-                onChange={(e) =>
-                  onUpdateMember({ favoriteBranch: e.target.value })
-                }
-                className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-[#FAF7F0] border border-[#D8CEB8] text-sm text-[#1F281B] focus:outline-none focus:border-[#4A5D3F]"
-              >
-                {BRANCH_OPTIONS.map((branch) => (
-                  <option key={branch} value={branch}>
-                    {branch}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Optional WhatsApp Opt-In Toggle */}
-            <div className="flex items-start justify-between gap-4 py-2">
-              <div className="flex items-start gap-3">
-                <MessageCircle className="w-5 h-5 text-[#4A5D3F] shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-[#293622]">
-                    {t.profile.whatsappTitle}
-                  </p>
-                  <p className="text-xs text-[#5A6353] mt-0.5 leading-snug">
-                    {t.profile.whatsappDesc}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={member.whatsappOptIn}
-                onClick={() =>
-                  onUpdateMember({ whatsappOptIn: !member.whatsappOptIn })
-                }
-                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4A5D3F] ${
-                  member.whatsappOptIn ? 'bg-[#4A5D3F]' : 'bg-[#D8CEB8]'
-                }`}
-              >
-                <span
-                  className={`inline-block h-5 w-5 rounded-full bg-white shadow-xs transition-transform ${
-                    member.whatsappOptIn ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Future Notifications Visual Toggle (Simulated — No Browser Permission) */}
-            <div className="flex items-start justify-between gap-4 py-2">
-              <div className="flex items-start gap-3">
-                <Bell className="w-5 h-5 text-[#4A5D3F] shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-[#293622]">
-                    {t.profile.notificationsTitle}
-                  </p>
-                  <p className="text-xs text-[#5A6353] mt-0.5 leading-snug">
-                    {t.profile.notificationsDesc}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={member.notificationsPreviewEnabled}
-                onClick={handleToggleNotificationsPreview}
-                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4A5D3F] ${
-                  member.notificationsPreviewEnabled
-                    ? 'bg-[#4A5D3F]'
-                    : 'bg-[#D8CEB8]'
-                }`}
-              >
-                <span
-                  className={`inline-block h-5 w-5 rounded-full bg-white shadow-xs transition-transform ${
-                    member.notificationsPreviewEnabled
-                      ? 'translate-x-6'
-                      : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
+          {/* Preferred branch */}
+          <div className="pt-6 border-t border-[#F0E9D8]">
+            <label
+              htmlFor="pref-branch"
+              className="block text-xs font-semibold text-[#5A6353] mb-1.5"
+            >
+              {t.profile.favoriteBranchLabel}
+            </label>
+            <select
+              id="pref-branch"
+              value={member.favoriteBranch}
+              onChange={(e) => onUpdateMember({ favoriteBranch: e.target.value })}
+              className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-[#FAF7F0] border border-[#D8CEB8] text-sm text-[#1F281B] focus:outline-none focus:border-[#4A5D3F]"
+            >
+              {BRANCH_OPTIONS.map((branch) => (
+                <option key={branch} value={branch}>
+                  {branch}
+                </option>
+              ))}
+            </select>
           </div>
         </section>
 
