@@ -225,6 +225,8 @@ export interface TranslationDictionary {
     fullNamePlaceholder: string;
     emailLabel: string;
     emailPlaceholder: string;
+    phoneLabel: string;
+    phonePlaceholder: string;
     birthDateLabel: string;
     passwordLabel: string;
     passwordPlaceholder: string;
@@ -239,6 +241,7 @@ export interface TranslationDictionary {
     legalConnectorAnd: string;
     errorNameRequired: string;
     errorEmailInvalid: string;
+    errorPhoneInvalid: string;
     errorBirthRequired: string;
     errorPasswordShort: string;
     successTitle: string;
@@ -573,6 +576,8 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       fullNamePlaceholder: 'Ej. Lucía Fernández',
       emailLabel: 'Correo electrónico',
       emailPlaceholder: 'lucia@ejemplo.com',
+      phoneLabel: 'Teléfono',
+      phonePlaceholder: 'Ej. +54 9 376 123 4567',
       birthDateLabel: 'Fecha de nacimiento',
       passwordLabel: 'Contraseña',
       passwordPlaceholder: 'Mínimo 6 caracteres',
@@ -587,6 +592,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       legalConnectorAnd: 'y',
       errorNameRequired: 'Ingresa tu nombre y apellido.',
       errorEmailInvalid: 'Ingresa un correo electrónico válido.',
+      errorPhoneInvalid: 'Ingresa un teléfono válido.',
       errorBirthRequired: 'Selecciona tu fecha de nacimiento.',
       errorPasswordShort: 'La contraseña debe tener al menos 6 caracteres.',
       successTitle: '¡Cuenta de muestra creada!',
@@ -948,6 +954,8 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       fullNamePlaceholder: 'e.g. Clara Bennett',
       emailLabel: 'Email address',
       emailPlaceholder: 'clara@example.com',
+      phoneLabel: 'Phone number',
+      phonePlaceholder: 'e.g. +1 555 123 4567',
       birthDateLabel: 'Date of birth',
       passwordLabel: 'Password',
       passwordPlaceholder: 'At least 6 characters',
@@ -962,6 +970,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       legalConnectorAnd: 'and',
       errorNameRequired: 'Please enter your full name.',
       errorEmailInvalid: 'Please enter a valid email address.',
+      errorPhoneInvalid: 'Please enter a valid phone number.',
       errorBirthRequired: 'Please choose your date of birth.',
       errorPasswordShort: 'Password must be at least 6 characters.',
       successTitle: 'Demo account created!',
@@ -1323,6 +1332,8 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       fullNamePlaceholder: 'Ex. Beatriz Almeida',
       emailLabel: 'E-mail',
       emailPlaceholder: 'beatriz@exemplo.com',
+      phoneLabel: 'Telefone',
+      phonePlaceholder: 'Ex. +55 11 99999-9999',
       birthDateLabel: 'Data de nascimento',
       passwordLabel: 'Senha',
       passwordPlaceholder: 'Mínimo de 6 caracteres',
@@ -1337,6 +1348,7 @@ export const TRANSLATIONS: Record<Language, TranslationDictionary> = {
       legalConnectorAnd: 'e',
       errorNameRequired: 'Informe seu nome completo.',
       errorEmailInvalid: 'Informe um e-mail válido.',
+      errorPhoneInvalid: 'Informe um telefone válido.',
       errorBirthRequired: 'Selecione sua data de nascimento.',
       errorPasswordShort: 'A senha precisa ter pelo menos 6 caracteres.',
       successTitle: 'Conta demonstrativa criada!',
