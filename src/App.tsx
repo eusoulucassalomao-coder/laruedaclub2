@@ -49,7 +49,10 @@ export default function App() {
   const [notificationPromptOpen, setNotificationPromptOpen] = useState(false);
 
   useEffect(() => {
-    if (!isInstalled || typeof Notification === 'undefined') return;
+    const standalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+    if (!isInstalled || !standalone || typeof Notification === 'undefined') return;
     const promptKey = 'club-la-ruedita-notification-prompt-v1';
     if (window.localStorage.getItem(promptKey)) return;
     if (Notification.permission !== 'default') {
