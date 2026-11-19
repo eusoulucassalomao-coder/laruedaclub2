@@ -86,8 +86,20 @@
       return `<tr><td>${dshort(x.ts)}</td><td>${esc(x.name)}</td><td><span title="${x.rating} de 5" style="color:${x.rating <= 3 ? "#b0361f" : "#2f6b3a"};white-space:nowrap">${stars(x.rating)}</span></td><td>${x.comment ? esc(x.comment) : "<small>Sin comentario</small>"}</td><td>${wa}</td></tr>`;
     }).join("") || `<tr><td colspan="5"><small>${svData.summary.answered ? "Ninguna encuesta con ese filtro." : "Todavía no hay encuestas respondidas."}</small></td></tr>`;
   }
+  // Aviso de nota baixa dentro do painel (substitui o alerta por WhatsApp): faixa no Resumen + contador no menu.
+  function paintSvAlert(){
+    const box = $("svAlert"), nav = document.querySelector('.nav2 a[href="#encuestas"]');
+    if(!svData) return;
+    const cut = Date.now() - 7 * 86400000;
+    const low = svData.surveys.filter(x => x.rating <= 3 && new Date(x.ts).getTime() >= cut);
+    if(nav) nav.textContent = low.length ? `Encuestas (${low.length})` : "Encuestas";
+    if(!low.length){ box.hidden = true; return; }
+    const l = low[0];
+    box.hidden = false;
+    box.innerHTML = `<b>⚠ ${low.length} ${low.length > 1 ? "encuestas con nota baja" : "encuesta con nota baja"} en los últimos 7 días.</b> La más reciente: ${esc(l.name)} (${l.rating} de 5)${l.comment ? ` — “${esc(l.comment)}”` : ""}. <a href="#encuestas">Ver encuestas</a>`;
+  }
   async function drawSurveys(){
-    try{ svData = await run(() => F.surveys(tok)); paintSurveys(); }catch(e){}
+    try{ svData = await run(() => F.surveys(tok)); paintSurveys(); paintSvAlert(); }catch(e){}
   }
   $("svFilter").addEventListener("change", paintSurveys);
 
