@@ -9,6 +9,15 @@ const { supabase, createAuthClient } = require("./supabase.cjs");
 
 const digits = value => String(value || "").replace(/\D/g, "");
 const isoNow = () => new Date().toISOString();
+// Comando de WhatsApp: só vale se a mensagem INTEIRA for a palavra (ignora maiúsculas, acentos, pontuação e emojis).
+// "baja el volumen" ou "me dieron de baja del gym" NÃO contam.
+const normCmd = value => String(value || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+  .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+const sameSecret = (a, b) => {
+  const ha = crypto.createHash("sha256").update(String(a)).digest();
+  const hb = crypto.createHash("sha256").update(String(b)).digest();
+  return crypto.timingSafeEqual(ha, hb);
+};
 const parseConfig = value => {
   if (value && typeof value === "object") return value;
   try { return JSON.parse(value || "{}"); } catch (_) { return {}; }
@@ -435,6 +444,26 @@ module.exports = async function handler(req,res) {
       }
 
       return res.status(200).json({ token: mintToken(slug, role), role });
+    }
+
+    if(action==="wa_optout"||action==="wa_optin"){
+      // Chamado pelo n8n quando chega uma resposta de WhatsApp. Protegido pela mesma chave do webhook (cabeçalho apikey).
+      const expected=process.env.N8N_VISIT_WEBHOOK_API_KEY||"",given=String(req.headers["apikey"]||"");
+      if(!expected||!given||!sameSecret(given,expected)) return res.status(401).json({error:"unauthorized"});
+      const word=action==="wa_optout"?"baja":"alta";
+      const none=()=>res.status(200).json({ok:true,matched:false});
+      if(normCmd(body.text)!==word) return none();            // trava 1: a mensagem inteira tem de ser a palavra
+      const phoneKey=digits(body.phone).slice(-8);
+      if(phoneKey.length<8) return none();
+      const c=await one("customers",[queryEqual("restaurant_id",r.id),queryEqual("phone_key",phoneKey)]);
+      if(!c) return none();                                     // trava 2: só quem é cliente do clube
+      const off=action==="wa_optout";
+      const changed=!!c.opted_out!==off;
+      if(changed){
+        await updateDocument("customers",c.id,{opted_out:off});
+        await commitOperations([transactionCreate("message_log",crypto.randomUUID(),{restaurant_id:r.id,customer_id:c.id,kind:off?"optout":"optin",meta:JSON.stringify({via:"whatsapp"}),created_at:isoNow()})]);
+      }
+      return res.status(200).json({ok:true,matched:true,changed,firstName:String(c.name||"").trim().split(/\s+/)[0]||""});
     }
 
     if(action.startsWith("auto_")){
